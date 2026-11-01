@@ -99,6 +99,17 @@ fun LoginScreen() {
                     )
                 )
 
+                Text(
+                    text = "¿Olvidaste la contraseña?",
+                    fontSize = 13.sp,
+                    color = Color(0xFF64B5F6),
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(top = 4.dp, start = 6.dp)
+                        .clickable { /* Lógica para recuperar contraseña */ }
+                )
+
                 Spacer(modifier = Modifier.height(28.dp))
 
                 Row(
