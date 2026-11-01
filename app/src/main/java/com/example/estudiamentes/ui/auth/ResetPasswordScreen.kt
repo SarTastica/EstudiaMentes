@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ResetPasswordScreen() {
+fun ResetPasswordScreen(
+    onNavigateToLogin: () -> Unit = {}
+) {
     var newPassword by remember { mutableStateOf("") }
     var confirmNewPassword by remember { mutableStateOf("") }
 
@@ -112,7 +114,7 @@ fun ResetPasswordScreen() {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { /* Lógica para actualizar contraseña */ },
+                    onClick = { onNavigateToLogin() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -135,7 +137,7 @@ fun ResetPasswordScreen() {
                     color = Color(0xFF64B5F6),
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
-                        .clickable { /* Volver a Login */ }
+                        .clickable { onNavigateToLogin() }
                         .padding(8.dp)
                 )
             }

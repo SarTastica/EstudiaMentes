@@ -21,7 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ForgotPasswordScreen() {
+fun ForgotPasswordScreen(
+    onNavigateToLogin: () -> Unit = {},
+    onNavigateToResetPassword: () -> Unit = {}
+) {
     var email by remember { mutableStateOf("") }
 
     val backgroundGradient = Brush.verticalGradient(
@@ -90,7 +93,7 @@ fun ForgotPasswordScreen() {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { /* Lógica de envío */ },
+                    onClick = { onNavigateToResetPassword() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -113,7 +116,7 @@ fun ForgotPasswordScreen() {
                     color = Color(0xFF64B5F6),
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
-                        .clickable { /* Volver a Login */ }
+                        .clickable { onNavigateToLogin() }
                         .padding(8.dp)
                 )
             }

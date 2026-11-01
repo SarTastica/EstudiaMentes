@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.sp
 import com.example.estudiamentes.R
 
 @Composable
-fun SignUpScreen() {
+fun SignUpScreen(
+    onNavigateToLogin: () -> Unit = {}
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -165,6 +167,19 @@ fun SignUpScreen() {
                         color = Color.White
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Enlace para volver a la pantalla de Login
+                Text(
+                    text = "¿Ya tienes cuenta? Inicia sesión",
+                    fontSize = 14.sp,
+                    color = Color(0xFF64B5F6),
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .clickable { onNavigateToLogin() }
+                        .padding(8.dp)
+                )
             }
         }
     }

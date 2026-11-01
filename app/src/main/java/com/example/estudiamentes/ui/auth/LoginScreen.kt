@@ -22,7 +22,10 @@ import androidx.compose.ui.unit.sp
 import com.example.estudiamentes.R
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    onNavigateToSignUp: () -> Unit = {},
+    onNavigateToForgotPassword: () -> Unit = {}
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -107,7 +110,7 @@ fun LoginScreen() {
                     modifier = Modifier
                         .align(Alignment.Start)
                         .padding(top = 4.dp, start = 6.dp)
-                        .clickable { /* Lógica para recuperar contraseña */ }
+                        .clickable { onNavigateToForgotPassword() }
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -155,6 +158,18 @@ fun LoginScreen() {
                         color = Color.White
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "¿No tienes cuenta? Regístrate",
+                    fontSize = 14.sp,
+                    color = Color(0xFF64B5F6),
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .clickable { onNavigateToSignUp() }
+                        .padding(8.dp)
+                )
             }
         }
     }
