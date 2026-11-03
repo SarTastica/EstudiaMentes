@@ -28,8 +28,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                Text("Autenticado: $isAuthenticated")
-
                 var welcomeMessage by remember {
                     mutableStateOf<String?>(null)
                 }
