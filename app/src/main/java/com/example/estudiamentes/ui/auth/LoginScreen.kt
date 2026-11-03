@@ -166,6 +166,28 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                when (val state = authState) {
+                    is AuthState.Error -> {
+                        Text(
+                            text = state.message,
+                            color = Color.Red,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    is AuthState.Success -> {
+                        if (state.message != null) {
+                            Text(
+                                text = state.message,
+                                color = Color(0xFF2E7D32),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    else -> {}
+                }
+
                 Text(
                     text = "¿No tienes cuenta? Regístrate",
                     fontSize = 14.sp,
@@ -187,6 +209,7 @@ fun LoginScreen(
                         indication = null
                     ) {},
                 contentAlignment = Alignment.Center
+
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(55.dp),

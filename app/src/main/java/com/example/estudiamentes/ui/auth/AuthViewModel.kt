@@ -47,7 +47,9 @@ class AuthViewModel : ViewModel() {
         authRepository.register(email, password) { success, error ->
 
             if (success) {
-                _authState.value = AuthState.Success("Registro completado con éxito")
+                _authState.value = AuthState.Success(
+                    "Te hemos enviado un correo. Verifica tu cuenta antes de iniciar sesión."
+                )
             } else {
                 _authState.value = AuthState.Error(
                     error ?: "Ha ocurrido un error al registrarse"
@@ -87,5 +89,12 @@ class AuthViewModel : ViewModel() {
             return false
         }
         return true
+    }
+
+    //El estado volvera al anterior para no guardar el success siempre
+    fun consumeSuccess() {
+        if (_authState.value is AuthState.Success) {
+            _authState.value = AuthState.Idle
+        }
     }
 }

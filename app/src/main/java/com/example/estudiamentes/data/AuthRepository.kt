@@ -14,11 +14,27 @@ class AuthRepository {
             .addOnCompleteListener { task ->
 
                 if (task.isSuccessful) {
-                    onResult(true, null)
+
+                    val user = firebaseAuth.currentUser
+
+                    user?.sendEmailVerification()
+                        ?.addOnCompleteListener { verificationTask ->
+
+                            if (verificationTask.isSuccessful) {
+                                firebaseAuth.signOut()
+                                onResult(true, null)
+                            } else {
+                                firebaseAuth.signOut()
+                                onResult(
+                                    false,
+                                    "No se ha podido enviar el correo de verificación"
+                                )
+                            }
+                        }
+
                 } else {
                     onResult(false, task.exception?.message)
                 }
-
             }
     }
 
@@ -29,10 +45,31 @@ class AuthRepository {
     ) {
         firebaseAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+
                 if (task.isSuccessful) {
-                    onResult(true, null)
+
+                    val user = firebaseAuth.currentUser
+
+                    user?.reload()?.addOnCompleteListener {
+
+                        val updatedUser = firebaseAuth.currentUser
+
+                        if (updatedUser?.isEmailVerified == true) {
+                            onResult(true, null)
+                        } else {
+                            firebaseAuth.signOut()
+                            onResult(
+                                false,
+                                "Debes verificar tu correo electrónico antes de iniciar sesión."
+                            )
+                        }
+                    }
+
                 } else {
-                    onResult(false, task.exception?.message)
+                    onResult(
+                        false,
+                        task.exception?.message ?: "No se ha podido iniciar sesión"
+                    )
                 }
             }
     }

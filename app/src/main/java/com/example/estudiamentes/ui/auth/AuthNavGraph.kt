@@ -32,10 +32,8 @@ fun AuthNavGraph(
         if (authState is AuthState.Success) {
             val message = (authState as AuthState.Success).message
 
-            if (
-                message == "Inicio de sesión exitoso" ||
-                message == "Registro completado con éxito"
-            ) {
+            if (message == "Inicio de sesión exitoso") {
+                authViewModel.consumeSuccess()
                 onAuthenticated(message)
             }
         }
