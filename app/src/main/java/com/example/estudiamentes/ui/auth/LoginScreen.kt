@@ -23,11 +23,13 @@ import com.example.estudiamentes.R
 
 @Composable
 fun LoginScreen(
+    authViewModel: AuthViewModel,
     onNavigateToSignUp: () -> Unit = {},
     onNavigateToForgotPassword: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val authState by authViewModel.authState.collectAsState()
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
@@ -144,7 +146,10 @@ fun LoginScreen(
                 }
 
                 Button(
-                    onClick = { /* Lógica de inicio de sesión */ },
+                    onClick = {
+                        authViewModel.login(email, password)
+                    },
+                    enabled = authState !is AuthState.Loading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -172,11 +177,31 @@ fun LoginScreen(
                 )
             }
         }
+        // Circulo de carga
+        if (authState is AuthState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {},
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(55.dp),
+                    color = Color(0xFF2196F3),
+                    strokeWidth = 5.dp
+                )
+            }
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen()
+    LoginScreen(
+        authViewModel = AuthViewModel()
+    )
 }

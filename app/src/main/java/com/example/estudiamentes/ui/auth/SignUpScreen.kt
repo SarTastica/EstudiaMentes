@@ -20,14 +20,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.estudiamentes.R
+import com.example.estudiamentes.ui.auth.AuthViewModel
+
 
 @Composable
 fun SignUpScreen(
+    authViewModel: AuthViewModel,
     onNavigateToLogin: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    val authState by authViewModel.authState.collectAsState()
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
@@ -153,12 +157,17 @@ fun SignUpScreen(
                 }
 
                 Button(
-                    onClick = { /* Registro */ },
+                    onClick = {
+                        authViewModel.signUp(email, password, confirmPassword)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF64B5F6))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF64B5F6)
+                    ),
+                    enabled = authState !is AuthState.Loading
                 ) {
                     Text(
                         text = "Sign Up",
@@ -182,11 +191,31 @@ fun SignUpScreen(
                 )
             }
         }
+
+        if (authState is AuthState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {},
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(55.dp),
+                    color = Color(0xFF2196F3),
+                    strokeWidth = 5.dp
+                )
+            }
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SignUpScreenPreview() {
-    SignUpScreen()
+    SignUpScreen(
+        authViewModel = AuthViewModel()
+    )
 }

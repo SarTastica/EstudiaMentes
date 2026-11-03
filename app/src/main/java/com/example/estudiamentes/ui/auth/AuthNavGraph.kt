@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 sealed class AuthScreen(val route: String) {
     object Login : AuthScreen("login")
@@ -17,19 +18,28 @@ sealed class AuthScreen(val route: String) {
 fun AuthNavGraph(
     navController: NavHostController = rememberNavController()
 ) {
+
+    val authViewModel: AuthViewModel = viewModel()
+
     NavHost(
         navController = navController,
         startDestination = AuthScreen.Login.route
     ) {
         composable(AuthScreen.Login.route) {
             LoginScreen(
-                onNavigateToSignUp = { navController.navigate(AuthScreen.SignUp.route) },
-                onNavigateToForgotPassword = { navController.navigate(AuthScreen.ForgotPassword.route) }
+                authViewModel = authViewModel,
+                onNavigateToSignUp = {
+                    navController.navigate(AuthScreen.SignUp.route)
+                },
+                onNavigateToForgotPassword = {
+                    navController.navigate(AuthScreen.ForgotPassword.route)
+                }
             )
         }
 
         composable(AuthScreen.SignUp.route) {
             SignUpScreen(
+                authViewModel = authViewModel,
                 onNavigateToLogin = {
                     navController.popBackStack()
                 }

@@ -1,4 +1,5 @@
 package com.example.estudiamentes.ui.auth
+import com.example.estudiamentes.data.AuthRepository
 
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
@@ -8,19 +9,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+
 class AuthViewModel : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+    private val authRepository = AuthRepository()
 
     fun login(email: String, password: String) {
         if (!validateEmailAndPassword(email, password)) return
 
-        viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            _authState.value = AuthState.Success("Inicio de sesión exitoso")
+        _authState.value = AuthState.Loading
+
+        authRepository.login(email, password) { success, error ->
+            if (success) {
+                _authState.value = AuthState.Success(
+                    "Inicio de sesión exitoso"
+                )
+            } else {
+                _authState.value = AuthState.Error(
+                    error ?: "No se ha podido iniciar sesión"
+                )
+            }
         }
     }
+
 
     fun signUp(email: String, password: String, confirmPassword: String) {
         if (!validateEmailAndPassword(email, password)) return
@@ -29,11 +42,19 @@ class AuthViewModel : ViewModel() {
             _authState.value = AuthState.Error("Las contraseñas no coinciden")
             return
         }
+        _authState.value = AuthState.Loading
 
-        viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            _authState.value = AuthState.Success("Registro completado con éxito")
+        authRepository.register(email, password) { success, error ->
+
+            if (success) {
+                _authState.value = AuthState.Success("Registro completado con éxito")
+            } else {
+                _authState.value = AuthState.Error(
+                    error ?: "Ha ocurrido un error al registrarse"
+                )
+            }
         }
+
     }
 
     fun resetPassword(email: String) {
