@@ -1,76 +1,42 @@
 package com.example.estudiamentes.ui
 
-
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import android.widget.Button
+import androidx.compose.material3.AlertDialogDefaults.containerColor
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    welcomeMessage: String? = null,
+    onLogout: () -> Unit
+) {
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
 
-    val backgroundGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFE2F4FF),
-            Color.White
-        )
-    )
+    LaunchedEffect(welcomeMessage) {
+        if (welcomeMessage != null) {
+            snackbarHostState.showSnackbar(welcomeMessage)
+        }
+    }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundGradient),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
+    Scaffold(
+        containerColor = Color.White,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    ) { innerPadding ->
+        Button(
+            onClick = onLogout
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "¡Bienvenido a EstudiaMentes!",
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64B5F6)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = "¡Has llegado a la página principal!",
-                    fontSize = 17.sp,
-                    color = Color.DarkGray
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Tu aventura de aprendizaje comienza aquí.",
-                    fontSize = 15.sp,
-                    color = Color.Gray
-                )
-            }
+            Text("Cerrar sesión")
         }
     }
 }

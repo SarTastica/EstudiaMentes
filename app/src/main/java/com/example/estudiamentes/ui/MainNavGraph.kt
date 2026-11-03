@@ -11,7 +11,7 @@ sealed class MainScreen(val route: String) {
 }
 
 @Composable
-fun MainNavGraph() {
+fun MainNavGraph(welcomeMessage: String? = null, onLogout: () -> Unit) {
 
     val navController = rememberNavController()
 
@@ -20,7 +20,7 @@ fun MainNavGraph() {
         startDestination = MainScreen.Home.route
     ) {
         composable(MainScreen.Home.route) {
-            HomeScreen()
+            HomeScreen(welcomeMessage = welcomeMessage, onLogout = onLogout)
         }
     }
 }

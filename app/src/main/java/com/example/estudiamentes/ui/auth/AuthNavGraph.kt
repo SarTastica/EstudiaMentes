@@ -1,6 +1,9 @@
 package com.example.estudiamentes.ui.auth
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,10 +19,27 @@ sealed class AuthScreen(val route: String) {
 
 @Composable
 fun AuthNavGraph(
+    onAuthenticated: (String?) -> Unit,
     navController: NavHostController = rememberNavController()
 ) {
 
     val authViewModel: AuthViewModel = viewModel()
+
+    val authState by authViewModel.authState.collectAsState()
+
+    //Cada vez q se cambie el estado, revisaremos y si es success se cambiara a la página home
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            val message = (authState as AuthState.Success).message
+
+            if (
+                message == "Inicio de sesión exitoso" ||
+                message == "Registro completado con éxito"
+            ) {
+                onAuthenticated(message)
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
