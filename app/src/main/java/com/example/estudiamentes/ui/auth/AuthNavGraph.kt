@@ -4,11 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.estudiamentes.ui.setup.ProfileSetupScreen
 
 sealed class AuthScreen(val route: String) {
     object Login : AuthScreen("login")
@@ -24,16 +25,12 @@ fun AuthNavGraph(
 ) {
 
     val authViewModel: AuthViewModel = viewModel()
-
     val authState by authViewModel.authState.collectAsState()
 
-    //Cada vez q se cambie el estado, revisaremos y si es success se cambiara a la página home
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
             val message = (authState as AuthState.Success).message
-
             if (message == "Inicio de sesión exitoso") {
-                authViewModel.consumeSuccess()
                 onAuthenticated(message)
             }
         }
@@ -46,21 +43,16 @@ fun AuthNavGraph(
         composable(AuthScreen.Login.route) {
             LoginScreen(
                 authViewModel = authViewModel,
-                onNavigateToSignUp = {
-                    navController.navigate(AuthScreen.SignUp.route)
-                },
-                onNavigateToForgotPassword = {
-                    navController.navigate(AuthScreen.ForgotPassword.route)
-                }
+                onNavigateToSignUp = { navController.navigate(AuthScreen.SignUp.route) },
+                onNavigateToForgotPassword = { navController.navigate(AuthScreen.ForgotPassword.route) }
             )
         }
 
         composable(AuthScreen.SignUp.route) {
             SignUpScreen(
                 authViewModel = authViewModel,
-                onNavigateToLogin = {
-                    navController.popBackStack()
-                }
+                onNavigateToLogin = { navController.popBackStack() },
+                onNavigateToSetup = { navController.navigate("profile_setup") }
             )
         }
 
@@ -78,6 +70,12 @@ fun AuthNavGraph(
                         popUpTo(AuthScreen.Login.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable("profile_setup") {
+            ProfileSetupScreen(
+                onFinish = { onAuthenticated("Registro completado") }
             )
         }
     }
