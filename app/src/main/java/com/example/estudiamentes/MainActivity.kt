@@ -3,14 +3,12 @@ package com.example.estudiamentes
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
-import com.example.estudiamentes.ui.MainNavGraph
 import com.example.estudiamentes.ui.auth.AuthNavGraph
+import com.example.estudiamentes.ui.navigation.AppNavigation // Importamos tu nuevo enrutador global
 import com.example.estudiamentes.ui.theme.EstudiaMentesTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -21,7 +19,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             EstudiaMentesTheme {
 
-                //Cuando isAuthenticated sea true, se actualizará la interfaz
                 var isAuthenticated by remember {
                     mutableStateOf(
                         FirebaseAuth.getInstance().currentUser != null
@@ -32,17 +29,11 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf<String?>(null)
                 }
 
-                //Si el usuario esta autenticado, se mutilizaría en MainNav, si no el AuthNav
+                // Si está autenticado, cargamos el Footer y las Salas
                 if (isAuthenticated) {
-                    MainNavGraph(
-                        welcomeMessage = welcomeMessage,
-                        onLogout = {
-                            FirebaseAuth.getInstance().signOut()
-                            isAuthenticated = false
-                            welcomeMessage = null
-                        }
-                    )
+                    AppNavigation() // <-- AQUÍ ENGANCHAMOS LO NUEVO
                 } else {
+                    // Si no, lo mandamos al Login/Registro
                     AuthNavGraph(
                         onAuthenticated = { message ->
                             welcomeMessage = message
