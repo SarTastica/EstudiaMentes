@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Public
@@ -29,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.example.estudiamentes.data.crearGrupo
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CreateSalaScreen(
     onBack: () -> Unit = {},
@@ -41,11 +41,29 @@ fun CreateSalaScreen(
 
     var privacidad by remember { mutableStateOf("privado") }
     var mostrarPopup by remember { mutableStateOf(false) }
-
     var creandoSala by remember { mutableStateOf(false) }
     var errorCreacion by remember { mutableStateOf<String?>(null) }
 
     val clipboardManager = LocalClipboardManager.current
+
+    // ETIQUETAS DISPONIBLES
+    val etiquetasDisponibles = listOf(
+        "Matemáticas",
+        "Apuntes",
+        "Biología",
+        "Historia",
+        "Física",
+        "Química",
+        "Idiomas",
+        "Programación",
+        "Exámenes",
+        "Otros"
+    )
+
+    // ETIQUETAS SELECCIONADAS
+    val etiquetasSeleccionadas = remember {
+        mutableStateListOf<String>()
+    }
 
     Column(
         modifier = Modifier
@@ -247,6 +265,74 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ETIQUETAS
+        Text(
+            text = "Etiquetas de la sala",
+            modifier = Modifier.fillMaxWidth(),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF424242)
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "Selecciona hasta 2 etiquetas para que otros usuarios puedan encontrar tu sala. Es opcional.",
+            modifier = Modifier.fillMaxWidth(),
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // OPCIONES DE ETIQUETAS
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            etiquetasDisponibles.forEach { etiqueta ->
+                val seleccionada = etiqueta in etiquetasSeleccionadas
+
+                FilterChip(
+                    selected = seleccionada,
+                    onClick = {
+                        if (seleccionada) {
+                            etiquetasSeleccionadas.remove(etiqueta)
+                        } else if (etiquetasSeleccionadas.size < 2) {
+                            etiquetasSeleccionadas.add(etiqueta)
+                        }
+                    },
+                    enabled = !creandoSala &&
+                            (seleccionada || etiquetasSeleccionadas.size < 2),
+                    label = {
+                        Text(etiqueta)
+                    },
+                    leadingIcon = if (seleccionada) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Seleccionada"
+                            )
+                        }
+                    } else {
+                        null
+                    }
+                )
+            }
+        }
+
+
+        Text(
+            text = "${etiquetasSeleccionadas.size}/2 etiquetas seleccionadas",
+            modifier = Modifier.fillMaxWidth(),
+            fontSize = 12.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.End
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // IMAGEN PROVISIONAL DE LA SALA
         Card(
             modifier = Modifier
@@ -305,6 +391,7 @@ fun CreateSalaScreen(
                         nombre = nombreSala.trim(),
                         privado = privacidad == "privado",
                         adminId = usuario.uid,
+                        etiquetas = etiquetasSeleccionadas.toList(),
 
                         onSuccess = { grupo ->
                             codigoGenerado = grupo.codigo

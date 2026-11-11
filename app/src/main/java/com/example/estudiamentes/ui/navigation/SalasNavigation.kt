@@ -54,6 +54,13 @@ fun SalasNavigation(paddingValues: PaddingValues) {
             SearchSalaScreen(
                 onBack = {
                     navController.popBackStack()
+                },
+                onSalaUnida = { groupId ->
+                    navController.navigate(
+                        "${SalasRoutes.SALA_ESTANDAR}/${Uri.encode(groupId)}"
+                    ) {
+                        popUpTo(SalasRoutes.INICIO)
+                    }
                 }
             )
         }
