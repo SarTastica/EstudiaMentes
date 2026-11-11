@@ -45,7 +45,7 @@ fun AppNavigation() {
 
             composable(BottomNavItem.Salas.route) {
                 // Aquí inyectamos tu pantalla independiente de Salas
-                SalasScreen(paddingValues = paddingValues)
+                SalasNavigation(paddingValues = paddingValues)
             }
 
             composable(BottomNavItem.Mensajes.route) {

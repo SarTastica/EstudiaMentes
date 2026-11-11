@@ -1,4 +1,4 @@
-package com.example.estudiamentes.ui.navigation
+package com.example.estudiamentes.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,8 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SalasScreen(paddingValues: PaddingValues = PaddingValues(0.dp)) {
+fun SalasScreen(paddingValues: PaddingValues = PaddingValues(0.dp),onBuscarSala: () -> Unit = {},onCrearSala: () -> Unit = {}) {
     var searchQuery by remember { mutableStateOf("") }
+    var menuExpanded by remember { mutableStateOf(false) }
 
     // Contenedor principal
     Box(
@@ -32,7 +33,7 @@ fun SalasScreen(paddingValues: PaddingValues = PaddingValues(0.dp)) {
             .background(Color(0xFFF5F5F5))
             .padding(paddingValues)
     ) {
-        // Tarjeta blanca con bordes curvos superiores
+        // Tarjeta blanca con bordes curvos sup
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -55,17 +56,49 @@ fun SalasScreen(paddingValues: PaddingValues = PaddingValues(0.dp)) {
                     color = Color(0xFF64B5F6)
                 )
 
-                IconButton(
-                    onClick = { /* Acción para crear nueva sala */ },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(Color(0xFFE3F2FD), shape = CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Crear sala",
-                        tint = Color(0xFF64B5F6)
-                    )
+                Box {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = Color(0xFFE3F2FD),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Opciones de sala",
+                            tint = Color(0xFF64B5F6)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Crear sala") },
+                            onClick = {
+                                menuExpanded = false
+                                onCrearSala()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text("Buscar sala") },
+                            onClick = {
+                                menuExpanded = false
+                                onBuscarSala()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null)
+                            }
+                        )
+                    }
                 }
             }
 
@@ -193,7 +226,9 @@ fun RoomCard(groupName: String, subject: String, tags: List<String>) {
 @Preview(showBackground = true)
 @Composable
 fun SalasScreenPreview() {
-    MainScaffold(currentRoute = "salas", onNavigate = {}) { padding ->
+    _root_ide_package_.com.example.estudiamentes.ui.navigation.MainScaffold(
+        currentRoute = "salas",
+        onNavigate = {}) { padding ->
         SalasScreen(paddingValues = padding)
     }
 }

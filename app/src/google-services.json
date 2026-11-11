@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1029654084304",
+    "project_id": "pamn-48ee7",
+    "storage_bucket": "pamn-48ee7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029654084304:android:320fd862120dee96fbfcd5",
+        "android_client_info": {
+          "package_name": "com.example.estudiamentes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1029654084304-hn9h1dbfbsaqa4n6qp3ej5l5ed2afku4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVURoVhMB-5bnBvDLJNoU0u-aMyiRY_fg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1029654084304-hn9h1dbfbsaqa4n6qp3ej5l5ed2afku4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
