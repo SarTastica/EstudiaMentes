@@ -5,11 +5,16 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.random.Random
 
+data class GrupoCreado(
+    val groupId: String,
+    val codigo: String
+)
+
 fun crearGrupo(
     nombre: String,
     privado: Boolean,
     adminId: String,
-    onSuccess: (String) -> Unit,
+    onSuccess: (GrupoCreado) -> Unit,
     onError: (Exception) -> Unit
 ) {
     val db = FirebaseFirestore.getInstance()
@@ -23,14 +28,10 @@ fun crearGrupo(
         .document(adminId)
 
     fun intentarCrear(intentosRestantes: Int) {
-
         val codigo = Random.nextInt(100000, 1000000).toString()
-
         val codigoRef = db.collection("groupCodes").document(codigo)
 
         db.runTransaction { transaction ->
-
-            // Comprobar si el código ya existe
             val codigoExistente = transaction.get(codigoRef)
 
             if (codigoExistente.exists()) {
@@ -40,9 +41,7 @@ fun crearGrupo(
             // Reservar código
             transaction.set(
                 codigoRef,
-                mapOf(
-                    "groupId" to grupoRef.id
-                )
+                mapOf("groupId" to grupoRef.id)
             )
 
             // Guardar grupo
@@ -68,13 +67,14 @@ fun crearGrupo(
             )
 
             codigo
-
         }.addOnSuccessListener { codigoCreado ->
-
-            onSuccess(codigoCreado)
-
+            onSuccess(
+                GrupoCreado(
+                    groupId = grupoRef.id,
+                    codigo = codigoCreado
+                )
+            )
         }.addOnFailureListener { error ->
-
             if (
                 error.message?.contains("CODIGO_DUPLICADO") == true &&
                 intentosRestantes > 1

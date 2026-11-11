@@ -32,10 +32,13 @@ import com.example.estudiamentes.data.crearGrupo
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CreateSalaScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onSalaCreada: (String) -> Unit = {}
 ) {
     var nombreSala by remember { mutableStateOf("") }
     var codigoGenerado by remember { mutableStateOf<String?>(null) }
+    var groupIdGenerado by remember { mutableStateOf<String?>(null) }
+
     var privacidad by remember { mutableStateOf("privado") }
     var mostrarPopup by remember { mutableStateOf(false) }
 
@@ -303,8 +306,9 @@ fun CreateSalaScreen(
                         privado = privacidad == "privado",
                         adminId = usuario.uid,
 
-                        onSuccess = { codigo ->
-                            codigoGenerado = codigo
+                        onSuccess = { grupo ->
+                            codigoGenerado = grupo.codigo
+                            groupIdGenerado = grupo.groupId
                             mostrarPopup = true
                             creandoSala = false
                         },
@@ -449,6 +453,10 @@ fun CreateSalaScreen(
                 Button(
                     onClick = {
                         mostrarPopup = false
+
+                        groupIdGenerado?.let { id ->
+                            onSalaCreada(id)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
