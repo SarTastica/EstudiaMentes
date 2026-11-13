@@ -41,9 +41,14 @@ fun SalasScreen(
     var isLoading by remember { mutableStateOf(true) }
 
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("salas_silenciadas", Context.MODE_PRIVATE) }
+    val prefsSilenciadas = remember { context.getSharedPreferences("salas_silenciadas", Context.MODE_PRIVATE) }
+    val prefsUnidas = remember { context.getSharedPreferences("salas_unidas", Context.MODE_PRIVATE) }
+
     var hiddenSalas by remember {
-        mutableStateOf(prefs.getStringSet("hidden_ids", emptySet()) ?: emptySet())
+        mutableStateOf(prefsSilenciadas.getStringSet("hidden_ids", emptySet()) ?: emptySet())
+    }
+    var joinedSalas by remember {
+        mutableStateOf(prefsUnidas.getStringSet("joined_ids", emptySet()) ?: emptySet())
     }
 
     LaunchedEffect(Unit) {
@@ -55,18 +60,20 @@ fun SalasScreen(
 
                 if (snapshot != null) {
                     salasList = snapshot.documents.mapNotNull { doc ->
-                        val sala = doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
-                        val esPrivado = doc.getBoolean("isPrivate")
-                            ?: doc.getBoolean("privado")
-                            ?: (doc.getString("privado") == "privado")
-
-                        if (sala != null && !esPrivado) sala else null
+                        doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
                     }
                 }
             }
     }
 
-    val visibleSalas = salasList.filter { it.id !in hiddenSalas }
+    // Filtrar: se muestran si son públicas O si el usuario se unió a ellas mediante código, y no están silenciadas/ocultas
+    val visibleSalas = salasList.filter { sala ->
+        val esPrivado = sala.isPrivate
+        val estaUnida = sala.id in joinedSalas
+        val estaOculta = sala.id in hiddenSalas
+
+        (!esPrivado || estaUnida) && !estaOculta
+    }
 
     Column(
         modifier = Modifier
@@ -145,7 +152,7 @@ fun SalasScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No hay salas públicas disponibles.",
+                        text = "No hay salas disponibles.",
                         color = TextGray,
                         fontSize = 16.sp
                     )
@@ -171,7 +178,7 @@ fun SalasScreen(
                             onSilenciarClick = {
                                 if (sala.id.isNotBlank()) {
                                     val updatedSet = hiddenSalas.toMutableSet().apply { add(sala.id) }
-                                    prefs.edit().putStringSet("hidden_ids", updatedSet).apply()
+                                    prefsSilenciadas.edit().putStringSet("hidden_ids", updatedSet).apply()
                                     hiddenSalas = updatedSet
                                 }
                             }
@@ -221,7 +228,7 @@ fun SalaCardItem(
                         color = TextDark
                     )
                     Text(
-                        text = "Asignatura general",
+                        text = if (sala.isPrivate) "Sala Privada" else "Asignatura general",
                         fontSize = 12.sp,
                         color = BluePrimary
                     )
