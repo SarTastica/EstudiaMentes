@@ -127,21 +127,21 @@ fun LoginScreen(
                         contentDescription = "Google",
                         modifier = Modifier
                             .size(28.dp)
-                            .clickable { /* Login Google */ }
+                            .clickable { }
                     )
                     Image(
                         painter = painterResource(id = R.drawable.ic_facebook),
                         contentDescription = "Facebook",
                         modifier = Modifier
                             .size(28.dp)
-                            .clickable { /* Login Facebook */ }
+                            .clickable { }
                     )
                     Image(
                         painter = painterResource(id = R.drawable.ic_microsoft),
                         contentDescription = "Microsoft",
                         modifier = Modifier
                             .size(26.dp)
-                            .clickable { /* Login Microsoft */ }
+                            .clickable { }
                     )
                 }
 
@@ -199,7 +199,7 @@ fun LoginScreen(
                 )
             }
         }
-        // Circulo de carga
+
         if (authState is AuthState.Loading) {
             Box(
                 modifier = Modifier

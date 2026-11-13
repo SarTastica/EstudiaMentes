@@ -29,11 +29,9 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf<String?>(null)
                 }
 
-                // Si está autenticado, cargamos el Footer y las Salas
                 if (isAuthenticated) {
-                    AppNavigation() // <-- AQUÍ ENGANCHAMOS LO NUEVO
+                    AppNavigation()
                 } else {
-                    // Si no, lo mandamos al Login/Registro
                     AuthNavGraph(
                         onAuthenticated = { message ->
                             welcomeMessage = message

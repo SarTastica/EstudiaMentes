@@ -1,197 +1,206 @@
 package com.example.estudiamentes.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.estudiamentes.model.SalaModel
+import com.google.firebase.firestore.FirebaseFirestore
+
+val BluePrimary = Color(0xFF5A9BFF)
+val BlueLight = Color(0xFFE8F1FF)
+val TextGray = Color(0xFF8A9EBF)
+val TextDark = Color(0xFF1A1F36)
 
 @Composable
-fun SalasScreen(paddingValues: PaddingValues = PaddingValues(0.dp),onBuscarSala: () -> Unit = {},onCrearSala: () -> Unit = {}) {
-    var searchQuery by remember { mutableStateOf("") }
-    var menuExpanded by remember { mutableStateOf(false) }
+fun SalasScreen(
+    paddingValues: PaddingValues,
+    onBuscarSala: () -> Unit,
+    onCrearSala: () -> Unit
+) {
+    var salasList by remember { mutableStateOf<List<SalaModel>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
 
-    // Contenedor principal
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-            .padding(paddingValues)
-    ) {
-        // Tarjeta blanca con bordes curvos sup
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-                )
-                .padding(horizontal = 24.dp, vertical = 32.dp)
-        ) {
-            // 1. Cabecera
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Salas",
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF64B5F6)
-                )
+    LaunchedEffect(Unit) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("groups")
+            .whereEqualTo("isPrivate", false)
+            .addSnapshotListener { snapshot, error ->
+                isLoading = false
+                if (error != null) return@addSnapshotListener
 
-                Box {
-                    IconButton(
-                        onClick = { menuExpanded = true },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = Color(0xFFE3F2FD),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Opciones de sala",
-                            tint = Color(0xFF64B5F6)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Crear sala") },
-                            onClick = {
-                                menuExpanded = false
-                                onCrearSala()
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Add, contentDescription = null)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = { Text("Buscar sala") },
-                            onClick = {
-                                menuExpanded = false
-                                onBuscarSala()
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = null)
-                            }
-                        )
+                if (snapshot != null) {
+                    salasList = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
                     }
                 }
             }
+    }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 2. Buscador
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar por asignatura o sala...", color = Color(0xFF90CAF9)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color.Black) },
-                shape = CircleShape,
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFBBDEFB),
-                    focusedBorderColor = Color(0xFF64B5F6),
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F7FA))
+            .padding(paddingValues)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Salas",
+                fontSize = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = BluePrimary
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 3. Lista de tarjetas
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
+            IconButton(
+                onClick = onCrearSala,
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(BlueLight, CircleShape)
             ) {
-                item {
-                    RoomCard(groupName = "Grupo A", subject = "Asignatura A", tags = listOf("Matemáticas", "Apuntes"))
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Crear sala",
+                    tint = BluePrimary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .clickable { onBuscarSala() }
+        ) {
+            OutlinedTextField(
+                value = "",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text("Buscar por asignatura o sala...", color = TextGray)
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null, tint = TextDark)
+                },
+                shape = RoundedCornerShape(50),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = Color(0xFFD1DDF2),
+                    disabledContainerColor = Color.White,
+                    disabledPlaceholderColor = TextGray
+                ),
+                enabled = false
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when {
+            isLoading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = BluePrimary)
                 }
-                item {
-                    RoomCard(groupName = "Grupo B", subject = "Asignatura B", tags = listOf("Lengua", "Apuntes"))
+            }
+            salasList.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No hay salas públicas disponibles.",
+                        color = TextGray,
+                        fontSize = 16.sp
+                    )
                 }
-                item {
-                    RoomCard(groupName = "Grupo C", subject = "Asignatura C", tags = listOf("Matemáticas", "Apuntes"))
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(salasList) { sala ->
+                        SalaCardItem(
+                            sala = sala,
+                            onEntrarClick = { }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-// 4. Componente de la Tarjeta
 @Composable
-fun RoomCard(groupName: String, subject: String, tags: List<String>) {
+fun SalaCardItem(sala: SalaModel, onEntrarClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(20.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(Color(0xFF90CAF9), RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Groups, contentDescription = null, tint = Color.White)
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(text = groupName, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text(text = subject, color = Color.Gray, fontSize = 14.sp)
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(BluePrimary.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    for (i in 1..2) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .offset(x = (10 * i).dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF64B5F6))
-                                .border(2.dp, Color.White, CircleShape)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(24.dp))
-                    Text("+4", fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = sala.name.ifEmpty { "Grupo sin nombre" },
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                    Text(
+                        text = "Asignatura general",
+                        fontSize = 12.sp,
+                        color = BluePrimary
+                    )
+                }
+
+                Row {
+                    Box(modifier = Modifier.size(30.dp).background(BluePrimary, CircleShape))
+                    Box(modifier = Modifier.size(30.dp).offset(x = (-10).dp).background(Color(0xFF34C759), CircleShape))
+                    Box(modifier = Modifier.size(30.dp).offset(x = (-20).dp).background(Color(0xFFFF9500), CircleShape))
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -199,36 +208,30 @@ fun RoomCard(groupName: String, subject: String, tags: List<String>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    tags.forEach { tag ->
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFFE3F2FD), RoundedCornerShape(50))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(text = tag, color = Color(0xFF1E88E5), fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                        }
-                    }
+                    TagItem("General")
+                    TagItem("Apuntes")
                 }
 
                 Button(
-                    onClick = { /* Acción para entrar */ },
+                    onClick = onEntrarClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
                     shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF64B5F6)),
                     modifier = Modifier.height(36.dp)
                 ) {
-                    Text("Entrar", fontWeight = FontWeight.Bold)
+                    Text("Entrar", color = Color.White, fontSize = 14.sp)
                 }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun SalasScreenPreview() {
-    _root_ide_package_.com.example.estudiamentes.ui.navigation.MainScaffold(
-        currentRoute = "salas",
-        onNavigate = {}) { padding ->
-        SalasScreen(paddingValues = padding)
+fun TagItem(text: String) {
+    Box(
+        modifier = Modifier
+            .background(BlueLight, RoundedCornerShape(50))
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
+        Text(text = text, color = BluePrimary, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
     }
 }

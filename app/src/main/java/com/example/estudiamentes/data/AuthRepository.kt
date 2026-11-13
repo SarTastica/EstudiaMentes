@@ -1,4 +1,5 @@
 package com.example.estudiamentes.data
+
 import com.google.firebase.auth.FirebaseAuth
 
 class AuthRepository {
@@ -12,14 +13,10 @@ class AuthRepository {
     ) {
         firebaseAuth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-
                 if (task.isSuccessful) {
-
                     val user = firebaseAuth.currentUser
-
                     user?.sendEmailVerification()
                         ?.addOnCompleteListener { verificationTask ->
-
                             if (verificationTask.isSuccessful) {
                                 firebaseAuth.signOut()
                                 onResult(true, null)
@@ -31,7 +28,6 @@ class AuthRepository {
                                 )
                             }
                         }
-
                 } else {
                     onResult(false, task.exception?.message)
                 }
@@ -45,26 +41,8 @@ class AuthRepository {
     ) {
         firebaseAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-
                 if (task.isSuccessful) {
-
-                    val user = firebaseAuth.currentUser
-
-                    user?.reload()?.addOnCompleteListener {
-
-                        val updatedUser = firebaseAuth.currentUser
-
-                        if (updatedUser?.isEmailVerified == true) {
-                            onResult(true, null)
-                        } else {
-                            firebaseAuth.signOut()
-                            onResult(
-                                false,
-                                "Debes verificar tu correo electrónico antes de iniciar sesión."
-                            )
-                        }
-                    }
-
+                    onResult(true, null)
                 } else {
                     onResult(
                         false,

@@ -1,6 +1,6 @@
 package com.example.estudiamentes.ui.auth
-import com.example.estudiamentes.data.AuthRepository
 
+import com.example.estudiamentes.data.AuthRepository
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
 
 class AuthViewModel : ViewModel() {
 
@@ -34,7 +33,6 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-
     fun signUp(email: String, password: String, confirmPassword: String) {
         if (!validateEmailAndPassword(email, password)) return
 
@@ -56,7 +54,6 @@ class AuthViewModel : ViewModel() {
                 )
             }
         }
-
     }
 
     fun resetPassword(email: String) {
@@ -91,7 +88,6 @@ class AuthViewModel : ViewModel() {
         return true
     }
 
-    //El estado volvera al anterior para no guardar el success siempre
     fun consumeSuccess() {
         if (_authState.value is AuthState.Success) {
             _authState.value = AuthState.Idle

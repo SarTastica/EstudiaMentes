@@ -12,11 +12,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.estudiamentes.ui.screens.SalasScreen
 import com.example.estudiamentes.ui.screens.CreateSalaScreen
 import com.example.estudiamentes.ui.screens.SalaEstandarScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.estudiamentes.ui.screens.SalasScreen
+import com.example.estudiamentes.ui.screens.SearchSalaScreen
+
+
 
 private object SalasRoutes {
     const val INICIO = "salas_inicio"
