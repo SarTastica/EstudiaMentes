@@ -1,4 +1,3 @@
-
 package com.example.estudiamentes.ui.navigation
 
 import android.net.Uri
@@ -6,7 +5,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,8 +16,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.estudiamentes.ui.screens.SalasScreen
 import com.example.estudiamentes.ui.screens.SearchSalaScreen
-
-
 
 private object SalasRoutes {
     const val INICIO = "salas_inicio"
@@ -39,20 +35,15 @@ fun SalasNavigation(paddingValues: PaddingValues) {
         modifier = Modifier.padding(paddingValues)
     ) {
 
-        // PANTALLA PRINCIPAL DE SALAS
         composable(SalasRoutes.INICIO) {
             SalasScreen(
-                paddingValues = PaddingValues(0.dp),
-                onBuscarSala = {
-                    navController.navigate(SalasRoutes.BUSCAR)
-                },
-                onCrearSala = {
-                    navController.navigate(SalasRoutes.CREAR)
-                }
+                paddingValues = paddingValues,
+                onBuscarSala = { navController.navigate(SalasRoutes.BUSCAR) },
+                onCrearSala = { navController.navigate(SalasRoutes.CREAR) },
+                onEntrarSala = { groupId -> navController.navigate("${SalasRoutes.SALA_ESTANDAR}/$groupId") }
             )
         }
 
-        // BUSCAR UNA SALA
         composable(SalasRoutes.BUSCAR) {
             SearchSalaScreen(
                 onBack = {
@@ -68,14 +59,12 @@ fun SalasNavigation(paddingValues: PaddingValues) {
             )
         }
 
-        // CREAR UNA SALA
         composable(SalasRoutes.CREAR) {
             CreateSalaScreen(
                 onBack = {
                     navController.popBackStack()
                 },
                 onSalaCreada = { groupId ->
-
                     navController.navigate(
                         "${SalasRoutes.SALA_ESTANDAR}/${Uri.encode(groupId)}"
                     ) {
@@ -85,7 +74,6 @@ fun SalasNavigation(paddingValues: PaddingValues) {
             )
         }
 
-        // SALA ESTÁNDAR
         composable(
             route = "${SalasRoutes.SALA_ESTANDAR}/{groupId}",
             arguments = listOf(
@@ -107,34 +95,23 @@ fun SalasNavigation(paddingValues: PaddingValues) {
                 mutableStateOf(false)
             }
 
-            // CONSULTAR LOS DATOS DE LA SALA EN FIRESTORE
             LaunchedEffect(groupId) {
-
                 if (groupId.isNotBlank()) {
-
                     FirebaseFirestore.getInstance()
                         .collection("groups")
                         .document(groupId)
                         .get()
                         .addOnSuccessListener { document ->
-
                             if (document.exists()) {
-
-                                // Obtener nombre de la sala
                                 nombreSala = document.getString("name")
                                     ?: "Mi sala"
 
-                                // Obtener administrador de Firestore
                                 val adminId = document.getString("adminId")
-
-                                // Obtener usuario conectado
                                 val usuarioActual =
                                     FirebaseAuth.getInstance().currentUser?.uid
 
-                                // Comprobar si es administrador
                                 esAdmin = adminId != null &&
                                         adminId == usuarioActual
-
                             } else {
                                 nombreSala = "Sala no encontrada"
                                 esAdmin = false
@@ -154,7 +131,6 @@ fun SalasNavigation(paddingValues: PaddingValues) {
                     navController.popBackStack()
                 },
                 onOpcionesClick = {
-                    // Aquí conectaremos las opciones de administrador.
                 }
             )
         }

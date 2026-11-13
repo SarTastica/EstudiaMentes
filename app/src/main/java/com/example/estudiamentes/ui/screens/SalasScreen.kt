@@ -1,5 +1,6 @@
 package com.example.estudiamentes.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -16,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,26 +34,39 @@ val TextDark = Color(0xFF1A1F36)
 fun SalasScreen(
     paddingValues: PaddingValues,
     onBuscarSala: () -> Unit,
-    onCrearSala: () -> Unit
+    onCrearSala: () -> Unit,
+    onEntrarSala: (String) -> Unit
 ) {
     var salasList by remember { mutableStateOf<List<SalaModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("salas_silenciadas", Context.MODE_PRIVATE) }
+    var hiddenSalas by remember {
+        mutableStateOf(prefs.getStringSet("hidden_ids", emptySet()) ?: emptySet())
+    }
+
     LaunchedEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
         db.collection("groups")
-            .whereEqualTo("isPrivate", false)
             .addSnapshotListener { snapshot, error ->
                 isLoading = false
                 if (error != null) return@addSnapshotListener
 
                 if (snapshot != null) {
                     salasList = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
+                        val sala = doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
+                        val esPrivado = doc.getBoolean("isPrivate")
+                            ?: doc.getBoolean("privado")
+                            ?: (doc.getString("privado") == "privado")
+
+                        if (sala != null && !esPrivado) sala else null
                     }
                 }
             }
     }
+
+    val visibleSalas = salasList.filter { it.id !in hiddenSalas }
 
     Column(
         modifier = Modifier
@@ -80,7 +96,7 @@ fun SalasScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Crear sala",
+                    contentDescription = null,
                     tint = BluePrimary,
                     modifier = Modifier.size(28.dp)
                 )
@@ -98,7 +114,7 @@ fun SalasScreen(
                 onValueChange = {},
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text("Buscar por asignatura o sala...", color = TextGray)
+                    Text("Buscar por asignatura o código...", color = TextGray)
                 },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null, tint = TextDark)
@@ -121,7 +137,7 @@ fun SalasScreen(
                     CircularProgressIndicator(color = BluePrimary)
                 }
             }
-            salasList.isEmpty() -> {
+            visibleSalas.isEmpty() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -137,14 +153,28 @@ fun SalasScreen(
             }
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(salasList) { sala ->
+                    items(visibleSalas) { sala ->
                         SalaCardItem(
                             sala = sala,
-                            onEntrarClick = { }
+                            onEntrarClick = {
+                                val routeId = if (sala.id.isNotBlank()) sala.id else sala.name
+                                if (routeId.isNotBlank()) {
+                                    onEntrarSala(routeId)
+                                }
+                            },
+                            onSilenciarClick = {
+                                if (sala.id.isNotBlank()) {
+                                    val updatedSet = hiddenSalas.toMutableSet().apply { add(sala.id) }
+                                    prefs.edit().putStringSet("hidden_ids", updatedSet).apply()
+                                    hiddenSalas = updatedSet
+                                }
+                            }
                         )
                     }
                 }
@@ -154,7 +184,11 @@ fun SalasScreen(
 }
 
 @Composable
-fun SalaCardItem(sala: SalaModel, onEntrarClick: () -> Unit) {
+fun SalaCardItem(
+    sala: SalaModel,
+    onEntrarClick: () -> Unit,
+    onSilenciarClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -193,10 +227,12 @@ fun SalaCardItem(sala: SalaModel, onEntrarClick: () -> Unit) {
                     )
                 }
 
-                Row {
-                    Box(modifier = Modifier.size(30.dp).background(BluePrimary, CircleShape))
-                    Box(modifier = Modifier.size(30.dp).offset(x = (-10).dp).background(Color(0xFF34C759), CircleShape))
-                    Box(modifier = Modifier.size(30.dp).offset(x = (-20).dp).background(Color(0xFFFF9500), CircleShape))
+                IconButton(onClick = onSilenciarClick) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Silenciar sala",
+                        tint = TextGray
+                    )
                 }
             }
 

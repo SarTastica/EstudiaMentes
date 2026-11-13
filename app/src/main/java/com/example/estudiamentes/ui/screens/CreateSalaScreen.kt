@@ -1,4 +1,3 @@
-
 package com.example.estudiamentes.ui.screens
 
 import androidx.compose.foundation.BorderStroke
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.example.estudiamentes.data.crearGrupo
 
+@OptIn(ExperimentalLayoutApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CreateSalaScreen(
     onBack: () -> Unit = {},
@@ -38,43 +38,30 @@ fun CreateSalaScreen(
     var nombreSala by remember { mutableStateOf("") }
     var codigoGenerado by remember { mutableStateOf<String?>(null) }
     var groupIdGenerado by remember { mutableStateOf<String?>(null) }
-
     var privacidad by remember { mutableStateOf("privado") }
     var mostrarPopup by remember { mutableStateOf(false) }
     var creandoSala by remember { mutableStateOf(false) }
     var errorCreacion by remember { mutableStateOf<String?>(null) }
 
     val clipboardManager = LocalClipboardManager.current
+    val scrollState = rememberScrollState()
 
-    // ETIQUETAS DISPONIBLES
     val etiquetasDisponibles = listOf(
-        "Matemáticas",
-        "Apuntes",
-        "Biología",
-        "Historia",
-        "Física",
-        "Química",
-        "Idiomas",
-        "Programación",
-        "Exámenes",
-        "Otros"
+        "Matemáticas", "Apuntes", "Biología", "Historia",
+        "Física", "Química", "Idiomas", "Programación",
+        "Exámenes", "Otros"
     )
 
-    // ETIQUETAS SELECCIONADAS
-    val etiquetasSeleccionadas = remember {
-        mutableStateListOf<String>()
-    }
+    val etiquetasSeleccionadas = remember { mutableStateListOf<String>() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // ENCABEZADO
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -86,9 +73,7 @@ fun CreateSalaScreen(
                     tint = Color(0xFF64B5F6)
                 )
             }
-
             Spacer(modifier = Modifier.width(8.dp))
-
             Text(
                 text = "Crear sala",
                 fontSize = 32.sp,
@@ -99,7 +84,6 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // NOMBRE DE LA SALA
         Text(
             text = "Nombre de la sala",
             modifier = Modifier.fillMaxWidth(),
@@ -116,9 +100,7 @@ fun CreateSalaScreen(
                 nombreSala = it
                 errorCreacion = null
             },
-            placeholder = {
-                Text("Ej. Grupo de biología")
-            },
+            placeholder = { Text("Ej. Grupo de biología") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             singleLine = true,
@@ -134,7 +116,6 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // PRIVACIDAD
         Text(
             text = "Privacidad de la sala",
             modifier = Modifier.fillMaxWidth(),
@@ -149,8 +130,6 @@ fun CreateSalaScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            // OPCIÓN PÚBLICA
             Card(
                 modifier = Modifier
                     .weight(1f)
@@ -160,17 +139,11 @@ fun CreateSalaScreen(
                     },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (privacidad == "publico")
-                        Color(0xFFE3F2FD)
-                    else
-                        Color.White
+                    containerColor = if (privacidad == "publico") Color(0xFFE3F2FD) else Color.White
                 ),
                 border = BorderStroke(
                     2.dp,
-                    if (privacidad == "publico")
-                        Color(0xFF64B5F6)
-                    else
-                        Color(0xFFE0E0E0)
+                    if (privacidad == "publico") Color(0xFF64B5F6) else Color(0xFFE0E0E0)
                 )
             ) {
                 Column(
@@ -187,16 +160,13 @@ fun CreateSalaScreen(
                         tint = Color(0xFF64B5F6),
                         modifier = Modifier.size(30.dp)
                     )
-
                     Spacer(modifier = Modifier.height(8.dp))
-
                     Text(
                         text = "Público",
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF424242),
                         textAlign = TextAlign.Center
                     )
-
                     Text(
                         text = "Visible para todos",
                         fontSize = 11.sp,
@@ -206,7 +176,6 @@ fun CreateSalaScreen(
                 }
             }
 
-            // OPCIÓN PRIVADA
             Card(
                 modifier = Modifier
                     .weight(1f)
@@ -216,17 +185,11 @@ fun CreateSalaScreen(
                     },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (privacidad == "privado")
-                        Color(0xFFE3F2FD)
-                    else
-                        Color.White
+                    containerColor = if (privacidad == "privado") Color(0xFFE3F2FD) else Color.White
                 ),
                 border = BorderStroke(
                     2.dp,
-                    if (privacidad == "privado")
-                        Color(0xFF64B5F6)
-                    else
-                        Color(0xFFE0E0E0)
+                    if (privacidad == "privado") Color(0xFF64B5F6) else Color(0xFFE0E0E0)
                 )
             ) {
                 Column(
@@ -243,16 +206,13 @@ fun CreateSalaScreen(
                         tint = Color(0xFF64B5F6),
                         modifier = Modifier.size(30.dp)
                     )
-
                     Spacer(modifier = Modifier.height(8.dp))
-
                     Text(
                         text = "Privado",
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF424242),
                         textAlign = TextAlign.Center
                     )
-
                     Text(
                         text = "Solo con invitación",
                         fontSize = 11.sp,
@@ -265,7 +225,6 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // ETIQUETAS
         Text(
             text = "Etiquetas de la sala",
             modifier = Modifier.fillMaxWidth(),
@@ -285,7 +244,6 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // OPCIONES DE ETIQUETAS
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -293,7 +251,6 @@ fun CreateSalaScreen(
         ) {
             etiquetasDisponibles.forEach { etiqueta ->
                 val seleccionada = etiqueta in etiquetasSeleccionadas
-
                 FilterChip(
                     selected = seleccionada,
                     onClick = {
@@ -303,25 +260,14 @@ fun CreateSalaScreen(
                             etiquetasSeleccionadas.add(etiqueta)
                         }
                     },
-                    enabled = !creandoSala &&
-                            (seleccionada || etiquetasSeleccionadas.size < 2),
-                    label = {
-                        Text(etiqueta)
-                    },
+                    enabled = !creandoSala && (seleccionada || etiquetasSeleccionadas.size < 2),
+                    label = { Text(etiqueta) },
                     leadingIcon = if (seleccionada) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Seleccionada"
-                            )
-                        }
-                    } else {
-                        null
-                    }
+                        { Icon(imageVector = Icons.Default.Check, contentDescription = "Seleccionada") }
+                    } else null
                 )
             }
         }
-
 
         Text(
             text = "${etiquetasSeleccionadas.size}/2 etiquetas seleccionadas",
@@ -333,15 +279,12 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // IMAGEN PROVISIONAL DE LA SALA
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(150.dp),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFE3F2FD)
-            )
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
         ) {
             Column(
                 modifier = Modifier
@@ -356,15 +299,12 @@ fun CreateSalaScreen(
                     tint = Color(0xFF64B5F6),
                     modifier = Modifier.size(48.dp)
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "Imagen de la sala",
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF424242)
                 )
-
                 Text(
                     text = "Próximamente podrás personalizarla",
                     fontSize = 12.sp,
@@ -375,14 +315,11 @@ fun CreateSalaScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // BOTÓN CREAR SALA
         Button(
             onClick = {
                 val usuario = FirebaseAuth.getInstance().currentUser
-
                 if (usuario == null) {
-                    errorCreacion =
-                        "Debes iniciar sesión para crear una sala."
+                    errorCreacion = "Debes iniciar sesión para crear una sala."
                 } else {
                     creandoSala = true
                     errorCreacion = null
@@ -392,18 +329,15 @@ fun CreateSalaScreen(
                         privado = privacidad == "privado",
                         adminId = usuario.uid,
                         etiquetas = etiquetasSeleccionadas.toList(),
-
                         onSuccess = { grupo ->
                             codigoGenerado = grupo.codigo
                             groupIdGenerado = grupo.groupId
                             mostrarPopup = true
                             creandoSala = false
                         },
-
                         onError = { error ->
                             creandoSala = false
-                            errorCreacion = error.localizedMessage
-                                ?: "No se pudo crear la sala."
+                            errorCreacion = error.localizedMessage ?: "No se pudo crear la sala."
                         }
                     )
                 }
@@ -413,9 +347,7 @@ fun CreateSalaScreen(
                 .fillMaxWidth()
                 .height(55.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF64B5F6)
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF64B5F6))
         ) {
             if (creandoSala) {
                 CircularProgressIndicator(
@@ -423,50 +355,28 @@ fun CreateSalaScreen(
                     color = Color.White,
                     strokeWidth = 2.dp
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 Text("Creando sala...")
             } else {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null
-                )
-
+                Icon(imageVector = Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "Crear sala",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = "Crear sala", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
 
-        // MENSAJE DE ERROR
         errorCreacion?.let { error ->
             Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = error,
-                color = Color.Red,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
+            Text(text = error, color = Color.Red, fontSize = 14.sp, textAlign = TextAlign.Center)
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
     }
 
-    // POPUP DE SALA CREADA
     if (mostrarPopup && codigoGenerado != null) {
         AlertDialog(
-            onDismissRequest = {
-                mostrarPopup = false
-            },
+            onDismissRequest = { mostrarPopup = false },
             shape = RoundedCornerShape(24.dp),
             containerColor = Color.White,
-
             title = {
                 Text(
                     text = "¡Sala creada!",
@@ -477,7 +387,6 @@ fun CreateSalaScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             },
-
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -488,45 +397,28 @@ fun CreateSalaScreen(
                         textAlign = TextAlign.Center,
                         color = Color(0xFF424242)
                     )
-
                     Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = "Código de acceso",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
-
+                    Text(text = "Código de acceso", color = Color.Gray, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(10.dp))
-
-                    // MANTENER PULSADO PARA COPIAR
                     Text(
                         text = codigoGenerado!!,
                         modifier = Modifier.combinedClickable(
                             onClick = {},
-                            onLongClick = {
-                                clipboardManager.setText(
-                                    AnnotatedString(codigoGenerado!!)
-                                )
-                            }
+                            onLongClick = { clipboardManager.setText(AnnotatedString(codigoGenerado!!)) }
                         ),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF333333),
                         letterSpacing = 6.sp
                     )
-
                     Spacer(modifier = Modifier.height(12.dp))
-
                     Text(
                         text = "Mantén pulsado el código para copiarlo.",
                         textAlign = TextAlign.Center,
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
-
                     Spacer(modifier = Modifier.height(8.dp))
-
                     Text(
                         text = "Comparte este código con las personas que quieras invitar.",
                         textAlign = TextAlign.Center,
@@ -535,26 +427,17 @@ fun CreateSalaScreen(
                     )
                 }
             },
-
             confirmButton = {
                 Button(
                     onClick = {
                         mostrarPopup = false
-
-                        groupIdGenerado?.let { id ->
-                            onSalaCreada(id)
-                        }
+                        groupIdGenerado?.let { id -> onSalaCreada(id) }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF64B5F6)
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF64B5F6))
                 ) {
-                    Text(
-                        text = "Aceptar",
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(text = "Aceptar", fontWeight = FontWeight.Bold)
                 }
             }
         )
