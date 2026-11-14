@@ -125,6 +125,7 @@ fun SalasNavigation(paddingValues: PaddingValues) {
             }
 
             SalaEstandarScreen(
+                groupId = groupId,
                 nombreSala = nombreSala,
                 esAdmin = esAdmin,
                 onBack = {

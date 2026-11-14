@@ -2,40 +2,50 @@ package com.example.estudiamentes.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Leaderboard
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+data class EstudianteEstudio(
+    val nombre: String,
+    val horas: Float,
+    val colorAvatar: Color,
+    val avatarResId: Int? = null
+)
+
+internal object EstudioColors {
+    val background = Color(0xFFF7FAFE)
+    val white = Color(0xFFFFFFFF)
+    val primary = Color(0xFF5A9BFF)
+    val primarySoft = Color(0xFFE7F1FF)
+    val navy = Color(0xFF263449)
+    val secondaryText = Color(0xFF8291A6)
+    val sky = Color(0xFFF3F8FE)
+    val meadow = Color(0xFFEAF5E8)
+    val trunk = Color(0xFF806B58)
+    val apple = Color(0xFFFF5252)
+    val appleHighlight = Color(0xFFFFCDD2)
+}
+
 @Composable
 fun SalaEstandarScreen(
+    groupId: String = "",
     nombreSala: String,
     esAdmin: Boolean = false,
     onBack: () -> Unit = {},
@@ -44,21 +54,46 @@ fun SalaEstandarScreen(
     onArchivosClick: () -> Unit = {},
     onOpcionesClick: () -> Unit = {}
 ) {
-    val fondo = Color(0xFFF5F5F5)
+    // 0 = Chat, 1 = Ranking, 2 = Apuntes, 3 = Ajustes
+    var selectedTab by remember { mutableIntStateOf(1) }
+
+    val estadoInicial = remember(groupId) {
+        SalasEstadoLocal.obtenerEstado(groupId, nombreSala)
+    }
+
+    var tituloSala by remember { mutableStateOf(estadoInicial.nombre) }
+    var esSalaPrivada by remember { mutableStateOf(estadoInicial.esPrivada) }
+    var capacidadMaxima by remember { mutableIntStateOf(estadoInicial.capacidadMaxima) }
+    var listaEstudiantes by remember { mutableStateOf(estadoInicial.estudiantes) }
+
+    // Si el nombre real llega un instante después desde Firebase, actualizamos si aún estaba cargando
+    LaunchedEffect(nombreSala) {
+        if (nombreSala.isNotBlank() &&
+            nombreSala != "Cargando sala..." &&
+            (tituloSala.isBlank() || tituloSala == "Cargando sala...")
+        ) {
+            tituloSala = nombreSala
+            SalasEstadoLocal.guardarCambios(
+                groupId = groupId,
+                nombreInicial = nombreSala,
+                nuevoNombre = nombreSala,
+                nuevaPrivacidad = esSalaPrivada,
+                nuevaCapacidad = capacidadMaxima,
+                nuevaLista = listaEstudiantes
+            )
+        }
+    }
 
     Scaffold(
-        containerColor = fondo
+        containerColor = EstudioColors.background
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(fondo)
+                .background(EstudioColors.background)
                 .padding(paddingValues)
-                .padding(horizontal = 22.dp, vertical = 16.dp)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
         ) {
-
-            // Encabezado
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -67,149 +102,174 @@ fun SalaEstandarScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Volver",
-                        tint = Color(0xFF344054)
+                        tint = EstudioColors.navy
                     )
                 }
 
                 Text(
-                    text = nombreSala,
+                    text = tituloSala,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 8.dp),
-                    fontSize = 23.sp,
+                        .padding(start = 6.dp),
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF263449)
+                    color = EstudioColors.navy
                 )
 
-                if (esAdmin) {
-                    IconButton(onClick = onOpcionesClick) {
+                Surface(
+                    shape = CircleShape,
+                    color = if (selectedTab == 3) EstudioColors.primarySoft else Color.Transparent
+                ) {
+                    IconButton(
+                        onClick = {
+                            selectedTab = if (selectedTab == 3) 1 else 3
+                            onOpcionesClick()
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Opciones de administrador",
-                            tint = Color(0xFF64B5F6),
-                            modifier = Modifier.size(27.dp)
+                            contentDescription = "Ajustes de la sala",
+                            tint = EstudioColors.primary,
+                            modifier = Modifier.size(25.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "Tu espacio de estudio",
-                fontSize = 15.sp,
-                color = Color(0xFF7A8492),
-                modifier = Modifier.padding(start = 12.dp)
+                fontSize = 14.sp,
+                color = EstudioColors.secondaryText,
+                modifier = Modifier.padding(start = 12.dp, top = 1.dp)
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Clasificación
-            ApartadoSala(
-                titulo = "Clasificación",
-                descripcion = "Consulta los puntos y las posiciones de los miembros.",
-                icono = Icons.Default.Leaderboard,
-                colorFondo = Color(0xFFDCEEFF),
-                colorIcono = Color(0xFF3478B9),
-                onClick = onClasificacionClick
-            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = EstudioColors.white,
+                shape = RoundedCornerShape(18.dp),
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    NavTabItem(
+                        icon = Icons.AutoMirrored.Filled.Message,
+                        label = "Chat",
+                        isSelected = selectedTab == 0,
+                        onClick = {
+                            selectedTab = 0
+                            onChatClick()
+                        }
+                    )
+                    NavTabItem(
+                        icon = Icons.Default.Leaderboard,
+                        label = "Ranking",
+                        isSelected = selectedTab == 1,
+                        onClick = {
+                            selectedTab = 1
+                            onClasificacionClick()
+                        }
+                    )
+                    NavTabItem(
+                        icon = Icons.Default.Folder,
+                        label = "Apuntes",
+                        isSelected = selectedTab == 2,
+                        onClick = {
+                            selectedTab = 2
+                            onArchivosClick()
+                        }
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Chat
-            ApartadoSala(
-                titulo = "Chat",
-                descripcion = "Habla con los demás integrantes de la sala.",
-                icono = Icons.Default.Message,
-                colorFondo = Color(0xFFFFF1C9),
-                colorIcono = Color(0xFFB28A22),
-                onClick = onChatClick
-            )
+            val tabModifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
 
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Archivos
-            ApartadoSala(
-                titulo = "Archivos",
-                descripcion = "Comparte y consulta documentos de estudio.",
-                icono = Icons.Default.Folder,
-                colorFondo = Color(0xFFFBE0E0),
-                colorIcono = Color(0xFFB65353),
-                onClick = onArchivosClick
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Opciones
-            ApartadoSala(
-                titulo = "Opciones",
-                descripcion = "Gestiona la sala y sus participantes.",
-                icono = Icons.Default.Settings,
-                colorFondo = Color(0xFFE5E7EB),
-                colorIcono = Color(0xFF596579),
-                onClick = onOpcionesClick
-            )
+            when (selectedTab) {
+                0 -> SalaChatTab(
+                    groupId = groupId,
+                    nombreSala = tituloSala,
+                    modifier = tabModifier
+                )
+                1 -> SalaRankingTab(
+                    estudiantes = listaEstudiantes,
+                    modifier = tabModifier
+                )
+                2 -> SalaApuntesTab(
+                    groupId = groupId,
+                    nombreSala = tituloSala,
+                    modifier = tabModifier
+                )
+                3 -> SalaOpcionesTab(
+                    nombreSalaActual = tituloSala,
+                    esPrivadaActual = esSalaPrivada,
+                    capacidadActual = capacidadMaxima,
+                    esAdmin = esAdmin,
+                    participantesActuales = listaEstudiantes,
+                    onConfirmarCambios = { nuevoNombre, nuevaPrivacidad, nuevaCapacidad, nuevaLista ->
+                        SalasEstadoLocal.guardarCambios(
+                            groupId = groupId,
+                            nombreInicial = nombreSala,
+                            nuevoNombre = nuevoNombre,
+                            nuevaPrivacidad = nuevaPrivacidad,
+                            nuevaCapacidad = nuevaCapacidad,
+                            nuevaLista = nuevaLista
+                        )
+                        tituloSala = nuevoNombre
+                        esSalaPrivada = nuevaPrivacidad
+                        capacidadMaxima = nuevaCapacidad
+                        listaEstudiantes = nuevaLista.sortedByDescending { it.horas }
+                        selectedTab = 1
+                    },
+                    onCerrarSala = onBack,
+                    modifier = tabModifier
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ApartadoSala(
-    titulo: String,
-    descripcion: String,
-    icono: ImageVector,
-    colorFondo: Color,
-    colorIcono: Color,
+fun NavTabItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
+    val backgroundColor =
+        if (isSelected) EstudioColors.primarySoft else Color.Transparent
+    val contentColor =
+        if (isSelected) EstudioColors.primary else EstudioColors.secondaryText
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(125.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorFondo
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+            .clip(RoundedCornerShape(13.dp))
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 7.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Icon(
-                imageVector = icono,
-                contentDescription = null,
-                tint = colorIcono,
-                modifier = Modifier.size(42.dp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 18.dp)
-            ) {
-                Text(
-                    text = titulo,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF263449)
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = descripcion,
-                    fontSize = 13.sp,
-                    color = Color(0xFF596579),
-                    lineHeight = 18.sp
-                )
-            }
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = contentColor,
+            modifier = Modifier.size(21.dp)
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = contentColor
+        )
     }
 }
