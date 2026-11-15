@@ -26,6 +26,7 @@ import kotlin.math.roundToInt
 fun SalaOpcionesTab(
     nombreSalaActual: String,
     esPrivadaActual: Boolean,
+    codigoInvitacion: String = "",
     capacidadActual: Int,
     esAdmin: Boolean,
     participantesActuales: List<EstudianteEstudio>,
@@ -125,7 +126,6 @@ fun SalaOpcionesTab(
                 )
             }
 
-            // 1. Nombre de la sala
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     text = "Nombre de la sala",
@@ -157,7 +157,6 @@ fun SalaOpcionesTab(
                 )
             }
 
-            // 2. Privacidad (Pública / Privada)
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = EstudioColors.sky,
@@ -228,7 +227,7 @@ fun SalaOpcionesTab(
                                     color = EstudioColors.secondaryText
                                 )
                                 Text(
-                                    text = "EST-8429",
+                                    text = codigoInvitacion.ifBlank { "Sin código" },
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = EstudioColors.primary
@@ -239,7 +238,6 @@ fun SalaOpcionesTab(
                 }
             }
 
-            // 3. Capacidad máxima (hasta 8 usuarios)
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = EstudioColors.sky,
@@ -290,7 +288,6 @@ fun SalaOpcionesTab(
                 }
             }
 
-            // 4. Gestión de participantes
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "Participantes (${participantes.size}/${capacidadMaxima.roundToInt()})",
@@ -299,64 +296,72 @@ fun SalaOpcionesTab(
                     color = EstudioColors.navy
                 )
 
-                participantes.forEach { miembro ->
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = EstudioColors.background,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                if (participantes.isEmpty()) {
+                    Text(
+                        text = "No hay participantes cargados todavía.",
+                        fontSize = 12.sp,
+                        color = EstudioColors.secondaryText
+                    )
+                } else {
+                    participantes.forEach { miembro ->
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = EstudioColors.background,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .size(34.dp)
-                                    .background(miembro.colorAvatar, CircleShape),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = miembro.nombre.take(1).uppercase(),
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = miembro.nombre,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = EstudioColors.navy
-                                )
-                                if (miembro.nombre == "Tú" && esAdmin) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .background(miembro.colorAvatar, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
-                                        text = "Administrador",
-                                        fontSize = 11.sp,
-                                        color = EstudioColors.primary,
-                                        fontWeight = FontWeight.Medium
+                                        text = miembro.nombre.take(1).uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
                                     )
                                 }
-                            }
 
-                            if (esAdmin && miembro.nombre != "Tú") {
-                                IconButton(
-                                    onClick = {
-                                        participantes = participantes.filter { it.nombre != miembro.nombre }
-                                    },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PersonRemove,
-                                        contentDescription = "Expulsar a ${miembro.nombre}",
-                                        tint = Color(0xFFE05252),
-                                        modifier = Modifier.size(18.dp)
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (miembro.isCurrentUser) "${miembro.nombre} (Tú)" else miembro.nombre,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = EstudioColors.navy
                                     )
+                                    if (miembro.isCurrentUser && esAdmin) {
+                                        Text(
+                                            text = "Administrador",
+                                            fontSize = 11.sp,
+                                            color = EstudioColors.primary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+
+                                if (esAdmin && !miembro.isCurrentUser) {
+                                    IconButton(
+                                        onClick = {
+                                            participantes = participantes.filter { it.uid != miembro.uid }
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PersonRemove,
+                                            contentDescription = "Expulsar a ${miembro.nombre}",
+                                            tint = Color(0xFFE05252),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -364,7 +369,6 @@ fun SalaOpcionesTab(
                 }
             }
 
-            // 5. Botón de Confirmar cambios (solo para admin)
             if (esAdmin) {
                 Button(
                     onClick = {
@@ -403,7 +407,6 @@ fun SalaOpcionesTab(
                 }
             }
 
-            // 6. Botón de cerrar sala o salir
             Button(
                 onClick = { mostrarDialogoCerrar = true },
                 modifier = Modifier

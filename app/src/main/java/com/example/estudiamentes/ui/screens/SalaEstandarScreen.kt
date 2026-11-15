@@ -1,5 +1,7 @@
 package com.example.estudiamentes.ui.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,15 +20,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.estudiamentes.data.eliminarSalaCompleta
+import com.example.estudiamentes.data.registrarActividadGrupo
+import com.example.estudiamentes.data.salirDeGrupo
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class EstudianteEstudio(
+    val uid: String,
     val nombre: String,
     val horas: Float,
     val colorAvatar: Color,
-    val avatarResId: Int? = null
+    val avatarResId: Int? = null,
+    val isCurrentUser: Boolean = false
 )
 
 internal object EstudioColors {
@@ -54,33 +65,106 @@ fun SalaEstandarScreen(
     onArchivosClick: () -> Unit = {},
     onOpcionesClick: () -> Unit = {}
 ) {
-    // 0 = Chat, 1 = Ranking, 2 = Apuntes, 3 = Ajustes
+    val context = LocalContext.current
+    val db = remember { FirebaseFirestore.getInstance() }
+    val auth = remember { FirebaseAuth.getInstance() }
+    val currentUserId = auth.currentUser?.uid ?: ""
+    val prefsUnidas = remember { context.getSharedPreferences("salas_unidas", Context.MODE_PRIVATE) }
+
     var selectedTab by remember { mutableIntStateOf(1) }
 
-    val estadoInicial = remember(groupId) {
-        SalasEstadoLocal.obtenerEstado(groupId, nombreSala)
+    var tituloSala by remember(nombreSala) { mutableStateOf(nombreSala) }
+    var esSalaPrivada by remember { mutableStateOf(false) }
+    var codigoInvitacion by remember { mutableStateOf("") }
+    var capacidadMaxima by remember { mutableIntStateOf(8) }
+    var esAdminReal by remember(esAdmin) { mutableStateOf(esAdmin) }
+    var listaEstudiantes by remember { mutableStateOf<List<EstudianteEstudio>>(emptyList()) }
+    var cargandoMiembros by remember { mutableStateOf(true) }
+    var salaCargadaAlgunaVez by remember { mutableStateOf(false) }
+
+    fun quitarSalaDeLocal() {
+        if (groupId.isBlank()) return
+        val actuales = prefsUnidas.getStringSet("joined_ids", emptySet())?.toMutableSet() ?: mutableSetOf()
+        actuales.remove(groupId)
+        prefsUnidas.edit().putStringSet("joined_ids", actuales).apply()
     }
 
-    var tituloSala by remember { mutableStateOf(estadoInicial.nombre) }
-    var esSalaPrivada by remember { mutableStateOf(estadoInicial.esPrivada) }
-    var capacidadMaxima by remember { mutableIntStateOf(estadoInicial.capacidadMaxima) }
-    var listaEstudiantes by remember { mutableStateOf(estadoInicial.estudiantes) }
+    DisposableEffect(groupId) {
+        if (groupId.isBlank()) {
+            cargandoMiembros = false
+            return@DisposableEffect onDispose {}
+        }
 
-    // Si el nombre real llega un instante después desde Firebase, actualizamos si aún estaba cargando
-    LaunchedEffect(nombreSala) {
-        if (nombreSala.isNotBlank() &&
-            nombreSala != "Cargando sala..." &&
-            (tituloSala.isBlank() || tituloSala == "Cargando sala...")
-        ) {
-            tituloSala = nombreSala
-            SalasEstadoLocal.guardarCambios(
-                groupId = groupId,
-                nombreInicial = nombreSala,
-                nuevoNombre = nombreSala,
-                nuevaPrivacidad = esSalaPrivada,
-                nuevaCapacidad = capacidadMaxima,
-                nuevaLista = listaEstudiantes
-            )
+        registrarActividadGrupo(groupId)
+
+        val groupRef = db.collection("groups").document(groupId)
+
+        val groupListener = groupRef.addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null) return@addSnapshotListener
+
+            if (!snapshot.exists()) {
+                if (salaCargadaAlgunaVez) {
+                    quitarSalaDeLocal()
+                    Toast.makeText(context, "La sala ha sido cerrada", Toast.LENGTH_SHORT).show()
+                    onBack()
+                }
+                return@addSnapshotListener
+            }
+
+            salaCargadaAlgunaVez = true
+
+            val nombreBD = snapshot.getString("name")
+            if (!nombreBD.isNullOrBlank()) {
+                tituloSala = nombreBD
+            }
+            esSalaPrivada = snapshot.getBoolean("privado")
+                ?: snapshot.getBoolean("isPrivate")
+                        ?: false
+            codigoInvitacion = snapshot.getString("codigo") ?: ""
+            capacidadMaxima = (snapshot.getLong("maxMembers") ?: 8L).toInt()
+
+            val adminId = snapshot.getString("adminId") ?: ""
+            if (adminId.isNotBlank()) {
+                esAdminReal = (adminId == currentUserId)
+            }
+        }
+
+        val coloresPaleta = listOf(
+            Color(0xFF5A9BFF),
+            Color(0xFF83B96D),
+            Color(0xFFE99A9A),
+            Color(0xFFA99ACD),
+            Color(0xFFE8BD62),
+            Color(0xFF4DB6AC),
+            Color(0xFFFF8A65),
+            Color(0xFF7986CB)
+        )
+
+        val membersListener = groupRef.collection("members")
+            .addSnapshotListener { snapshot, error ->
+                cargandoMiembros = false
+                if (error != null || snapshot == null) return@addSnapshotListener
+
+                val miembros = snapshot.documents.mapIndexed { index, doc ->
+                    val uid = doc.getString("uid") ?: doc.id
+                    val nombre = doc.getString("name") ?: "Estudiante"
+                    val horas = (doc.getDouble("studyHours") ?: 0.0).toFloat()
+
+                    EstudianteEstudio(
+                        uid = uid,
+                        nombre = nombre,
+                        horas = horas,
+                        colorAvatar = coloresPaleta[index % coloresPaleta.size],
+                        isCurrentUser = uid == currentUserId
+                    )
+                }.sortedByDescending { it.horas }
+
+                listaEstudiantes = miembros
+            }
+
+        onDispose {
+            groupListener.remove()
+            membersListener.remove()
         }
     }
 
@@ -202,6 +286,7 @@ fun SalaEstandarScreen(
                 )
                 1 -> SalaRankingTab(
                     estudiantes = listaEstudiantes,
+                    isLoading = cargandoMiembros,
                     modifier = tabModifier
                 )
                 2 -> SalaApuntesTab(
@@ -212,25 +297,55 @@ fun SalaEstandarScreen(
                 3 -> SalaOpcionesTab(
                     nombreSalaActual = tituloSala,
                     esPrivadaActual = esSalaPrivada,
+                    codigoInvitacion = codigoInvitacion,
                     capacidadActual = capacidadMaxima,
-                    esAdmin = esAdmin,
+                    esAdmin = esAdminReal,
                     participantesActuales = listaEstudiantes,
                     onConfirmarCambios = { nuevoNombre, nuevaPrivacidad, nuevaCapacidad, nuevaLista ->
-                        SalasEstadoLocal.guardarCambios(
-                            groupId = groupId,
-                            nombreInicial = nombreSala,
-                            nuevoNombre = nuevoNombre,
-                            nuevaPrivacidad = nuevaPrivacidad,
-                            nuevaCapacidad = nuevaCapacidad,
-                            nuevaLista = nuevaLista
-                        )
-                        tituloSala = nuevoNombre
-                        esSalaPrivada = nuevaPrivacidad
-                        capacidadMaxima = nuevaCapacidad
-                        listaEstudiantes = nuevaLista.sortedByDescending { it.horas }
+                        if (groupId.isNotBlank()) {
+                            val groupRef = db.collection("groups").document(groupId)
+
+                            val expulsados = listaEstudiantes.filter { anterior ->
+                                nuevaLista.none { actual -> actual.uid == anterior.uid }
+                            }
+                            expulsados.forEach { expulsado ->
+                                groupRef.collection("members").document(expulsado.uid).delete()
+                                groupRef.update("memberIds", FieldValue.arrayRemove(expulsado.uid))
+                            }
+
+                            groupRef.update(
+                                mapOf(
+                                    "name" to nuevoNombre,
+                                    "privado" to nuevaPrivacidad,
+                                    "maxMembers" to nuevaCapacidad,
+                                    "lastActivity" to System.currentTimeMillis()
+                                )
+                            ).addOnSuccessListener {
+                                Toast.makeText(context, "Cambios guardados", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                         selectedTab = 1
                     },
-                    onCerrarSala = onBack,
+                    onCerrarSala = {
+                        if (groupId.isNotBlank()) {
+                            quitarSalaDeLocal()
+                            if (esAdminReal) {
+                                eliminarSalaCompleta(
+                                    groupId = groupId,
+                                    codigo = codigoInvitacion,
+                                    onComplete = { onBack() }
+                                )
+                            } else if (currentUserId.isNotBlank()) {
+                                salirDeGrupo(
+                                    groupId = groupId,
+                                    uid = currentUserId,
+                                    onSuccess = { onBack() }
+                                )
+                            }
+                        } else {
+                            onBack()
+                        }
+                    },
                     modifier = tabModifier
                 )
             }

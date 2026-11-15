@@ -1,70 +1,31 @@
 package com.example.estudiamentes.ui.screens
 
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.graphics.Color
 
-data class EstadoSalaLocal(
+data class SalaLocalInfo(
     val nombre: String,
-    val esPrivada: Boolean = false,
-    val capacidadMaxima: Int = 8,
-    val estudiantes: List<EstudianteEstudio> = listOf(
-        EstudianteEstudio("Tú", 4.5f, Color(0xFF5A9BFF)),
-        EstudianteEstudio("Alex", 3.0f, Color(0xFF83B96D)),
-        EstudianteEstudio("Lucía", 2.0f, Color(0xFFE99A9A)),
-        EstudianteEstudio("Carlos", 1.5f, Color(0xFFA99ACD)),
-        EstudianteEstudio("Sofía", 1.0f, Color(0xFFE8BD62))
-    ).sortedByDescending { it.horas }
+    val esPrivada: Boolean,
+    val capacidadMaxima: Int,
+    val participantes: List<EstudianteEstudio>
 )
 
 object SalasEstadoLocal {
-    private val estadosPorSala = mutableStateMapOf<String, EstadoSalaLocal>()
+    private val salas = mutableMapOf<String, SalaLocalInfo>()
 
-    fun obtenerEstado(groupId: String, nombreInicial: String): EstadoSalaLocal {
-        val clave = groupId.ifBlank { nombreInicial }
-        val existente = estadosPorSala[clave]
-
-        if (existente != null) {
-            if ((existente.nombre.isBlank() || existente.nombre == "Cargando sala...") &&
-                nombreInicial.isNotBlank() && nombreInicial != "Cargando sala..."
-            ) {
-                val actualizado = existente.copy(nombre = nombreInicial)
-                estadosPorSala[clave] = actualizado
-                return actualizado
-            }
-            return existente
+    fun obtenerSala(nombreInicial: String): SalaLocalInfo {
+        return salas.getOrPut(nombreInicial) {
+            SalaLocalInfo(
+                nombre = nombreInicial,
+                esPrivada = false,
+                capacidadMaxima = 8,
+                participantes = listOf(
+                    EstudianteEstudio("1", "Tú", 4.5f, Color(0xFF5A9BFF), isCurrentUser = true),
+                    EstudianteEstudio("2", "Ana", 3.5f, Color(0xFF83B96D)),
+                    EstudianteEstudio("3", "Carlos", 2.0f, Color(0xFFE99A9A)),
+                    EstudianteEstudio("4", "Elena", 1.5f, Color(0xFFA99ACD)),
+                    EstudianteEstudio("5", "Luis", 1.0f, Color(0xFFE8BD62))
+                )
+            )
         }
-
-        val nuevo = EstadoSalaLocal(nombre = nombreInicial)
-        if (nombreInicial.isNotBlank() && nombreInicial != "Cargando sala...") {
-            estadosPorSala[clave] = nuevo
-        }
-        return nuevo
-    }
-
-    fun obtenerNombreActualizado(groupId: String, nombreOriginal: String): String {
-        val clave = groupId.ifBlank { nombreOriginal }
-        val guardado = estadosPorSala[clave]?.nombre
-        return if (!guardado.isNullOrBlank() && guardado != "Cargando sala...") {
-            guardado
-        } else {
-            nombreOriginal
-        }
-    }
-
-    fun guardarCambios(
-        groupId: String,
-        nombreInicial: String,
-        nuevoNombre: String,
-        nuevaPrivacidad: Boolean,
-        nuevaCapacidad: Int,
-        nuevaLista: List<EstudianteEstudio>
-    ) {
-        val clave = groupId.ifBlank { nombreInicial }
-        estadosPorSala[clave] = EstadoSalaLocal(
-            nombre = nuevoNombre,
-            esPrivada = nuevaPrivacidad,
-            capacidadMaxima = nuevaCapacidad,
-            estudiantes = nuevaLista.sortedByDescending { it.horas }
-        )
     }
 }

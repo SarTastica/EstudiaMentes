@@ -2,13 +2,16 @@ package com.example.estudiamentes.ui.screens
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,29 +25,34 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import com.example.estudiamentes.data.registrarActividadGrupo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.storage.FirebaseStorage
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 
 data class ApunteSala(
     val id: String = "",
     val titulo: String = "",
-    val tipo: String = "PDF",
+    val tipo: String = "ENLACE",
     val url: String = "",
+    val base64Data: String = "",
     val autorNombre: String = "",
     val autorId: String = "",
     val timestamp: Long = 0L
@@ -58,7 +66,6 @@ fun SalaApuntesTab(
 ) {
     val context = LocalContext.current
     val db = remember { FirebaseFirestore.getInstance() }
-    val storage = remember { FirebaseStorage.getInstance() }
     val auth = remember { FirebaseAuth.getInstance() }
     val currentUser = auth.currentUser
 
@@ -69,6 +76,7 @@ fun SalaApuntesTab(
     var mostrarDialogoEnlace by remember { mutableStateOf(false) }
     var tituloEnlace by remember { mutableStateOf("") }
     var urlEnlace by remember { mutableStateOf("") }
+    var fotoSeleccionada by remember { mutableStateOf<ApunteSala?>(null) }
 
     LaunchedEffect(currentUser?.uid) {
         val uid = currentUser?.uid
@@ -102,12 +110,19 @@ fun SalaApuntesTab(
         onDispose { listener.remove() }
     }
 
-    fun guardarRegistroApunte(titulo: String, tipo: String, url: String) {
+    fun guardarApunteFirestore(
+        titulo: String,
+        tipo: String,
+        url: String = "",
+        base64Data: String = ""
+    ) {
         if (groupId.isBlank()) return
+        isUploading = true
         val nuevoApunte = hashMapOf(
             "titulo" to titulo,
             "tipo" to tipo,
             "url" to url,
+            "base64Data" to base64Data,
             "autorNombre" to nombreUsuarioActual,
             "autorId" to (currentUser?.uid ?: "guest"),
             "timestamp" to System.currentTimeMillis()
@@ -117,12 +132,13 @@ fun SalaApuntesTab(
             .collection("notes")
             .add(nuevoApunte)
             .addOnSuccessListener {
+                registrarActividadGrupo(groupId)
                 isUploading = false
-                Toast.makeText(context, "Apunte compartido correctamente", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Apunte compartido", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 isUploading = false
-                Toast.makeText(context, "Error al guardar el apunte", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             }
     }
 
@@ -130,25 +146,13 @@ fun SalaApuntesTab(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
         if (bitmap != null && groupId.isNotBlank()) {
-            isUploading = true
             val baos = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
-            val data = baos.toByteArray()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos)
+            val base64Str = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT)
 
             val fechaStr = SimpleDateFormat("dd-MM_HHmm", Locale.getDefault()).format(Date())
             val fileName = "Foto_apunte_$fechaStr.jpg"
-            val ref = storage.reference.child("salas/$groupId/apuntes/${UUID.randomUUID()}_$fileName")
-
-            ref.putBytes(data)
-                .addOnSuccessListener {
-                    ref.downloadUrl.addOnSuccessListener { downloadUri ->
-                        guardarRegistroApunte(fileName, "FOTO", downloadUri.toString())
-                    }
-                }
-                .addOnFailureListener {
-                    isUploading = false
-                    Toast.makeText(context, "Error al subir la foto", Toast.LENGTH_SHORT).show()
-                }
+            guardarApunteFirestore(titulo = fileName, tipo = "FOTO", base64Data = base64Str)
         }
     }
 
@@ -156,7 +160,6 @@ fun SalaApuntesTab(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null && groupId.isNotBlank()) {
-            isUploading = true
             var fileName = "Documento.pdf"
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -165,18 +168,65 @@ fun SalaApuntesTab(
                 }
             }
 
-            val ref = storage.reference.child("salas/$groupId/apuntes/${UUID.randomUUID()}_$fileName")
-            ref.putFile(uri)
-                .addOnSuccessListener {
-                    ref.downloadUrl.addOnSuccessListener { downloadUri ->
-                        guardarRegistroApunte(fileName, "PDF", downloadUri.toString())
-                    }
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (bytes != null) {
+                if (bytes.size > 700_000) {
+                    Toast.makeText(
+                        context,
+                        "El PDF supera 700 KB. Compártelo como enlace de Drive.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    val base64Str = Base64.encodeToString(bytes, Base64.DEFAULT)
+                    guardarApunteFirestore(titulo = fileName, tipo = "PDF", base64Data = base64Str)
                 }
-                .addOnFailureListener {
-                    isUploading = false
-                    Toast.makeText(context, "Error al subir el PDF", Toast.LENGTH_SHORT).show()
-                }
+            }
         }
+    }
+
+    if (fotoSeleccionada != null) {
+        val apunteFoto = fotoSeleccionada!!
+        val bitmap = remember(apunteFoto.base64Data) {
+            try {
+                val decoded = Base64.decode(apunteFoto.base64Data, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { fotoSeleccionada = null },
+            containerColor = Color.White,
+            title = {
+                Text(
+                    text = apunteFoto.titulo,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = EstudioColors.navy
+                )
+            },
+            text = {
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = apunteFoto.titulo,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 360.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text("No se pudo cargar la imagen.")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { fotoSeleccionada = null }) {
+                    Text("Cerrar", color = EstudioColors.primary, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 
     if (mostrarDialogoEnlace) {
@@ -219,7 +269,11 @@ fun SalaApuntesTab(
                             if (!urlLimpia.startsWith("http://") && !urlLimpia.startsWith("https://")) {
                                 urlLimpia = "https://$urlLimpia"
                             }
-                            guardarRegistroApunte(tituloLimpio, "ENLACE", urlLimpia)
+                            guardarApunteFirestore(
+                                titulo = tituloLimpio,
+                                tipo = "ENLACE",
+                                url = urlLimpia
+                            )
                             tituloEnlace = ""
                             urlEnlace = ""
                             mostrarDialogoEnlace = false
@@ -258,7 +312,7 @@ fun SalaApuntesTab(
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
             Text(
-                text = "Sube fotos de la pizarra, PDFs o enlaces útiles",
+                text = "Sube fotos de la pizarra, PDFs ligeros o enlaces útiles",
                 fontSize = 12.sp,
                 color = EstudioColors.secondaryText,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -349,16 +403,44 @@ fun SalaApuntesTab(
                         ApunteItemCard(
                             apunte = apunte,
                             onClick = {
-                                if (apunte.url.isNotBlank()) {
-                                    try {
-                                        val intent = Intent(Intent.ACTION_VIEW, apunte.url.toUri())
-                                        context.startActivity(intent)
-                                    } catch (_: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            "No se pudo abrir el recurso",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                when {
+                                    apunte.tipo == "FOTO" && apunte.base64Data.isNotBlank() -> {
+                                        fotoSeleccionada = apunte
+                                    }
+                                    apunte.tipo == "PDF" && apunte.base64Data.isNotBlank() -> {
+                                        try {
+                                            val pdfBytes = Base64.decode(apunte.base64Data, Base64.DEFAULT)
+                                            val tempFile = File(context.cacheDir, apunte.titulo)
+                                            tempFile.writeBytes(pdfBytes)
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.provider",
+                                                tempFile
+                                            )
+                                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                setDataAndType(uri, "application/pdf")
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            Toast.makeText(
+                                                context,
+                                                "No se pudo abrir el PDF en este dispositivo",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                    apunte.url.isNotBlank() -> {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, apunte.url.toUri())
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            Toast.makeText(
+                                                context,
+                                                "No se pudo abrir el enlace",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 }
                             }

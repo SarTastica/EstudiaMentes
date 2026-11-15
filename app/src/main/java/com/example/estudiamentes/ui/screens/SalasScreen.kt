@@ -1,6 +1,7 @@
 package com.example.estudiamentes.ui.screens
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -22,7 +24,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.estudiamentes.data.limpiarSalasInactivas
+import com.example.estudiamentes.data.unirseAGrupo
 import com.example.estudiamentes.model.SalaModel
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 val BluePrimary = Color(0xFF5A9BFF)
@@ -39,8 +44,10 @@ fun SalasScreen(
 ) {
     var salasList by remember { mutableStateOf<List<SalaModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var isJoining by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val currentUserId = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     val prefsSilenciadas = remember { context.getSharedPreferences("salas_silenciadas", Context.MODE_PRIVATE) }
     val prefsUnidas = remember { context.getSharedPreferences("salas_unidas", Context.MODE_PRIVATE) }
 
@@ -51,28 +58,32 @@ fun SalasScreen(
         mutableStateOf(prefsUnidas.getStringSet("joined_ids", emptySet()) ?: emptySet())
     }
 
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
+        limpiarSalasInactivas()
+
         val db = FirebaseFirestore.getInstance()
-        db.collection("groups")
+        val listener = db.collection("groups")
             .addSnapshotListener { snapshot, error ->
                 isLoading = false
-                if (error != null) return@addSnapshotListener
+                if (error != null || snapshot == null) return@addSnapshotListener
 
-                if (snapshot != null) {
-                    salasList = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
-                    }
+                salasList = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(SalaModel::class.java)?.copy(id = doc.id)
                 }
             }
+
+        onDispose { listener.remove() }
     }
 
-    // Filtrar: se muestran si son públicas O si el usuario se unió a ellas mediante código, y no están silenciadas/ocultas
     val visibleSalas = salasList.filter { sala ->
-        val esPrivado = sala.isPrivate
-        val estaUnida = sala.id in joinedSalas
+        val esPrivado = sala.privado
+        val estaUnidaLocal = sala.id in joinedSalas
+        val esMiembroEnBD = currentUserId.isNotBlank() && (
+                sala.memberIds.contains(currentUserId) || sala.adminId == currentUserId
+                )
         val estaOculta = sala.id in hiddenSalas
 
-        (!esPrivado || estaUnida) && !estaOculta
+        (!esPrivado || estaUnidaLocal || esMiembroEnBD) && !estaOculta
     }
 
     Column(
@@ -166,12 +177,35 @@ fun SalasScreen(
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(visibleSalas) { sala ->
+                    items(visibleSalas, key = { it.id.ifBlank { it.name } }) { sala ->
                         SalaCardItem(
                             sala = sala,
+                            isJoining = isJoining,
                             onEntrarClick = {
-                                val routeId = if (sala.id.isNotBlank()) sala.id else sala.name
-                                if (routeId.isNotBlank()) {
+                                val routeId = sala.id.ifBlank { sala.name }
+                                if (routeId.isBlank() || isJoining) return@SalaCardItem
+
+                                if (sala.id.isNotBlank()) {
+                                    isJoining = true
+                                    unirseAGrupo(
+                                        groupId = sala.id,
+                                        onSuccess = {
+                                            isJoining = false
+                                            val updatedJoined = joinedSalas.toMutableSet().apply { add(sala.id) }
+                                            prefsUnidas.edit().putStringSet("joined_ids", updatedJoined).apply()
+                                            joinedSalas = updatedJoined
+                                            onEntrarSala(routeId)
+                                        },
+                                        onError = { error ->
+                                            isJoining = false
+                                            Toast.makeText(
+                                                context,
+                                                error.message ?: "No se pudo entrar a la sala",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
+                                } else {
                                     onEntrarSala(routeId)
                                 }
                             },
@@ -193,6 +227,7 @@ fun SalasScreen(
 @Composable
 fun SalaCardItem(
     sala: SalaModel,
+    isJoining: Boolean = false,
     onEntrarClick: () -> Unit,
     onSilenciarClick: () -> Unit
 ) {
@@ -215,7 +250,12 @@ fun SalaCardItem(
                         .background(BluePrimary.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+                    Icon(
+                        imageVector = if (sala.privado) Icons.Default.Lock else Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -228,7 +268,7 @@ fun SalaCardItem(
                         color = TextDark
                     )
                     Text(
-                        text = if (sala.isPrivate) "Sala Privada" else "Asignatura general",
+                        text = if (sala.privado) "Sala Privada" else "Asignatura general",
                         fontSize = 12.sp,
                         color = BluePrimary
                     )
@@ -251,12 +291,19 @@ fun SalaCardItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TagItem("General")
-                    TagItem("Apuntes")
+                    if (sala.etiquetas.isNotEmpty()) {
+                        sala.etiquetas.forEach { TagItem(it) }
+                    } else {
+                        TagItem("General")
+                    }
+                    val totalMiembros = sala.memberIds.size.coerceAtLeast(1)
+                    val maxMiembros = if (sala.maxMembers > 0) sala.maxMembers else 8
+                    TagItem("$totalMiembros/$maxMiembros")
                 }
 
                 Button(
                     onClick = onEntrarClick,
+                    enabled = !isJoining,
                     colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
                     shape = RoundedCornerShape(50),
                     modifier = Modifier.height(36.dp)

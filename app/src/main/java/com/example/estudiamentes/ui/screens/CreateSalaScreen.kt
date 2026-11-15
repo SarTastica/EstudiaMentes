@@ -9,9 +9,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Public
@@ -26,8 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
 import com.example.estudiamentes.data.crearGrupo
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalLayoutApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -36,6 +37,7 @@ fun CreateSalaScreen(
     onSalaCreada: (String) -> Unit = {}
 ) {
     var nombreSala by remember { mutableStateOf("") }
+    var etiquetaManual by remember { mutableStateOf("") }
     var codigoGenerado by remember { mutableStateOf<String?>(null) }
     var groupIdGenerado by remember { mutableStateOf<String?>(null) }
     var privacidad by remember { mutableStateOf("privado") }
@@ -46,13 +48,23 @@ fun CreateSalaScreen(
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
 
-    val etiquetasDisponibles = listOf(
-        "Matemáticas", "Apuntes", "Biología", "Historia",
-        "Física", "Química", "Idiomas", "Programación",
-        "Exámenes", "Otros"
+    val etiquetasPredefinidas = listOf(
+        "Matemáticas", "Química", "Física", "Biología",
+        "Programación", "Historia", "Idiomas", "Apuntes",
+        "Exámenes"
     )
 
     val etiquetasSeleccionadas = remember { mutableStateListOf<String>() }
+
+    fun agregarEtiquetaManual() {
+        val limpia = etiquetaManual.trim()
+        if (limpia.isEmpty() || etiquetasSeleccionadas.size >= 2) return
+        val yaExiste = etiquetasSeleccionadas.any { it.equals(limpia, ignoreCase = true) }
+        if (!yaExiste) {
+            etiquetasSeleccionadas.add(limpia)
+        }
+        etiquetaManual = ""
+    }
 
     Column(
         modifier = Modifier
@@ -68,7 +80,7 @@ fun CreateSalaScreen(
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
                     tint = Color(0xFF64B5F6)
                 )
@@ -100,7 +112,7 @@ fun CreateSalaScreen(
                 nombreSala = it
                 errorCreacion = null
             },
-            placeholder = { Text("Ej. Grupo de biología") },
+            placeholder = { Text("Ej. Prácticas Informática Gráfica") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             singleLine = true,
@@ -214,7 +226,7 @@ fun CreateSalaScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "Solo con invitación",
+                        text = "Solo con código de 6 dígitos",
                         fontSize = 11.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center
@@ -226,7 +238,7 @@ fun CreateSalaScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Etiquetas de la sala",
+            text = "Etiquetas y código de asignatura",
             modifier = Modifier.fillMaxWidth(),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
@@ -236,26 +248,91 @@ fun CreateSalaScreen(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-            text = "Selecciona hasta 2 etiquetas para que otros usuarios puedan encontrar tu sala. Es opcional.",
+            text = "Elige una etiqueta rápida o escribe el código/asignatura de tu grado (ej. 40980 Informática Gráfica). Máximo 2.",
             modifier = Modifier.fillMaxWidth(),
             fontSize = 13.sp,
             color = Color.Gray
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = etiquetaManual,
+                onValueChange = { if (it.length <= 40) etiquetaManual = it },
+                placeholder = { Text("Ej. 40980 Informática Gráfica", fontSize = 13.sp) },
+                singleLine = true,
+                enabled = !creandoSala && etiquetasSeleccionadas.size < 2,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF333333),
+                    unfocusedTextColor = Color(0xFF333333),
+                    focusedBorderColor = Color(0xFF64B5F6),
+                    unfocusedBorderColor = Color(0xFFBDBDBD)
+                )
+            )
+
+            FilledIconButton(
+                onClick = { agregarEtiquetaManual() },
+                enabled = !creandoSala && etiquetaManual.isNotBlank() && etiquetasSeleccionadas.size < 2,
+                shape = RoundedCornerShape(14.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFF64B5F6)),
+                modifier = Modifier.size(52.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Añadir etiqueta",
+                    tint = Color.White
+                )
+            }
+        }
+
+        val manualesActivas = etiquetasSeleccionadas.filter { sel ->
+            etiquetasPredefinidas.none { pred -> pred.equals(sel, ignoreCase = true) }
+        }
+        if (manualesActivas.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                manualesActivas.forEach { customTag ->
+                    InputChip(
+                        selected = true,
+                        onClick = { if (!creandoSala) etiquetasSeleccionadas.remove(customTag) },
+                        label = { Text(customTag, fontWeight = FontWeight.SemiBold) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Quitar $customTag",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            etiquetasDisponibles.forEach { etiqueta ->
-                val seleccionada = etiqueta in etiquetasSeleccionadas
+            etiquetasPredefinidas.forEach { etiqueta ->
+                val seleccionada = etiquetasSeleccionadas.any { it.equals(etiqueta, ignoreCase = true) }
                 FilterChip(
                     selected = seleccionada,
                     onClick = {
                         if (seleccionada) {
-                            etiquetasSeleccionadas.remove(etiqueta)
+                            etiquetasSeleccionadas.removeAll { it.equals(etiqueta, ignoreCase = true) }
                         } else if (etiquetasSeleccionadas.size < 2) {
                             etiquetasSeleccionadas.add(etiqueta)
                         }
@@ -397,34 +474,37 @@ fun CreateSalaScreen(
                         textAlign = TextAlign.Center,
                         color = Color(0xFF424242)
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(text = "Código de acceso", color = Color.Gray, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = codigoGenerado!!,
-                        modifier = Modifier.combinedClickable(
-                            onClick = {},
-                            onLongClick = { clipboardManager.setText(AnnotatedString(codigoGenerado!!)) }
-                        ),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF333333),
-                        letterSpacing = 6.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Mantén pulsado el código para copiarlo.",
-                        textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Comparte este código con las personas que quieras invitar.",
-                        textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
+                    if (privacidad == "privado") {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(text = "Código de sala privada", color = Color.Gray, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = codigoGenerado!!,
+                            modifier = Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = { clipboardManager.setText(AnnotatedString(codigoGenerado!!)) }
+                            ),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF333333),
+                            letterSpacing = 6.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Mantén pulsado el código para copiarlo y compartirlo con tus compañeros.",
+                            textAlign = TextAlign.Center,
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "Tu sala es pública: aparecerá en el buscador por su nombre o etiqueta de asignatura.",
+                            textAlign = TextAlign.Center,
+                            fontSize = 13.sp,
+                            color = Color.Gray
+                        )
+                    }
                 }
             },
             confirmButton = {

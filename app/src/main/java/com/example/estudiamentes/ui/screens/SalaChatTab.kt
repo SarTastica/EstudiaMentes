@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.estudiamentes.data.registrarActividadGrupo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -177,6 +178,9 @@ fun SalaChatTab(
                                     .document(groupId)
                                     .collection("messages")
                                     .add(nuevoMensaje)
+                                    .addOnSuccessListener {
+                                        registrarActividadGrupo(groupId)
+                                    }
                             }
                         },
                         enabled = textoMensaje.isNotBlank()

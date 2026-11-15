@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun SalaRankingTab(
     estudiantes: List<EstudianteEstudio>,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -102,62 +103,91 @@ fun SalaRankingTab(
                                 .background(EstudioColors.meadow)
                         )
 
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            items(
-                                items = estudiantes,
-                                key = { it.nombre }
-                            ) { estudiante ->
-                                val fase = calcularFaseArbol(estudiante.horas)
-
-                                Column(
-                                    modifier = Modifier
-                                        .width(64.dp)
-                                        .fillMaxHeight()
-                                        .padding(top = 10.dp, bottom = 8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Bottom
+                        when {
+                            isLoading -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = EstudioColors.primary,
+                                        modifier = Modifier.size(28.dp),
+                                        strokeWidth = 2.5.dp
+                                    )
+                                }
+                            }
+                            estudiantes.isEmpty() -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "${formatearHoras(estudiante.horas)} h",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = if (estudiante.nombre == "Tú") {
-                                            EstudioColors.primary
-                                        } else {
-                                            EstudioColors.navy
-                                        }
+                                        text = "Aún no hay participantes registrados",
+                                        fontSize = 13.sp,
+                                        color = EstudioColors.secondaryText,
+                                        fontWeight = FontWeight.Medium
                                     )
+                                }
+                            }
+                            else -> {
+                                LazyRow(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    items(
+                                        items = estudiantes,
+                                        key = { it.uid }
+                                    ) { estudiante ->
+                                        val fase = calcularFaseArbol(estudiante.horas)
 
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f),
-                                        contentAlignment = Alignment.BottomCenter
-                                    ) {
-                                        TreeEvolutionIllustration(
+                                        Column(
                                             modifier = Modifier
-                                                .width(62.dp)
-                                                .fillMaxHeight(),
-                                            fase = fase,
-                                            canopyColor = estudiante.colorAvatar
-                                        )
+                                                .width(64.dp)
+                                                .fillMaxHeight()
+                                                .padding(top = 10.dp, bottom = 8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Bottom
+                                        ) {
+                                            Text(
+                                                text = "${formatearHoras(estudiante.horas)} h",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = if (estudiante.isCurrentUser) {
+                                                    EstudioColors.primary
+                                                } else {
+                                                    EstudioColors.navy
+                                                }
+                                            )
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f),
+                                                contentAlignment = Alignment.BottomCenter
+                                            ) {
+                                                TreeEvolutionIllustration(
+                                                    modifier = Modifier
+                                                        .width(62.dp)
+                                                        .fillMaxHeight(),
+                                                    fase = fase,
+                                                    canopyColor = estudiante.colorAvatar
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.height(7.dp))
+
+                                            ProfileAvatar(
+                                                avatarResId = estudiante.avatarResId,
+                                                nombre = estudiante.nombre,
+                                                color = estudiante.colorAvatar
+                                            )
+                                        }
                                     }
-
-                                    Spacer(modifier = Modifier.height(7.dp))
-
-                                    ProfileAvatar(
-                                        avatarResId = estudiante.avatarResId,
-                                        nombre = estudiante.nombre,
-                                        color = estudiante.colorAvatar
-                                    )
                                 }
                             }
                         }
@@ -202,7 +232,7 @@ fun SalaRankingTab(
 
         itemsIndexed(
             items = estudiantes,
-            key = { _, item -> "rank_${item.nombre}" }
+            key = { _, item -> "rank_${item.uid}" }
         ) { index, estudiante ->
             RankingBannerItem(
                 posicion = index + 1,
@@ -214,11 +244,11 @@ fun SalaRankingTab(
 
 private fun calcularFaseArbol(horas: Float): Int {
     return when {
-        horas < 1.5f -> 1  // 1 hora (planta pequeña)
-        horas < 2.0f -> 2  // 1.5 horas (tallo)
-        horas < 3.0f -> 3  // 2 horas (árbol pequeño)
-        horas <= 4.0f -> 4 // 3 - 4 horas (árbol grande)
-        else -> 5          // Más de 4 horas (árbol grande con manzanas)
+        horas < 1.5f -> 1
+        horas < 2.0f -> 2
+        horas < 3.0f -> 3
+        horas <= 4.0f -> 4
+        else -> 5
     }
 }
 
@@ -289,7 +319,7 @@ private fun RankingBannerItem(
                 Spacer(modifier = Modifier.width(14.dp))
 
                 Text(
-                    text = estudiante.nombre,
+                    text = if (estudiante.isCurrentUser) "${estudiante.nombre} (Tú)" else estudiante.nombre,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = EstudioColors.navy,
