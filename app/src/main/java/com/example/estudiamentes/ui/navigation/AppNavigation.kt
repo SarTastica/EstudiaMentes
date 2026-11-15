@@ -13,28 +13,25 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.estudiamentes.ui.estudio.EstudioScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    // Obtenemos la ruta actual para saber qué botón del footer pintar de azul
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: BottomNavItem.Salas.route
 
-    // El footer global se pinta una sola vez aquí
     MainScaffold(
         currentRoute = currentRoute,
         onNavigate = { route ->
             navController.navigate(route) {
-                // Configuración estándar para no acumular pantallas al navegar por el footer
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
         }
     ) { paddingValues ->
-        // Este NavHost es el "hueco" donde se cargan las páginas
         NavHost(
             navController = navController,
             startDestination = BottomNavItem.Salas.route
@@ -44,12 +41,11 @@ fun AppNavigation() {
             }
 
             composable(BottomNavItem.Salas.route) {
-                // Aquí inyectamos tu pantalla independiente de Salas
                 SalasNavigation(paddingValues = paddingValues)
             }
 
-            composable(BottomNavItem.Mensajes.route) {
-                PlaceholderScreen("Mensajes", modifier = Modifier.padding(paddingValues))
+            composable("estudio") {
+                EstudioScreen(paddingValues = paddingValues)
             }
 
             composable(BottomNavItem.Archivos.route) {
@@ -63,7 +59,6 @@ fun AppNavigation() {
     }
 }
 
-// Pantalla temporal para las pestañas que aún no hemos creado
 @Composable
 fun PlaceholderScreen(title: String, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
