@@ -1,4 +1,4 @@
-package com.example.estudiamentes.ui.setup
+package com.example.estudiamentes.ui.screens
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult

@@ -19,6 +19,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.estudiamentes.ui.screens.EditProfileScreen
+import com.example.estudiamentes.ui.screens.ProfileScreen
 
 @Composable
 fun AppNavigation(onLogout: () -> Unit) {
@@ -63,27 +65,24 @@ fun AppNavigation(onLogout: () -> Unit) {
             }
 
             composable(BottomNavItem.Perfil.route) {
+                ProfileScreen(
+                    paddingValues = paddingValues,
+                    onEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = onLogout
+                )
+            }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-
-                    Text(
-                        text = "Mi perfil"
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Button(
-                        onClick = onLogout
-                    ) {
-                        Text("Cerrar sesión")
+            composable("edit_profile") {
+                EditProfileScreen(
+                    onCancel = {
+                        navController.popBackStack()
+                    },
+                    onSave = { username, photoUri, dailyGoal ->
+                        navController.popBackStack()
                     }
-                }
+                )
             }
         }
     }

@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileSetupScreen(
-    onFinish: () -> Unit = {}
+    onFinish: () -> Unit = {},paddingValues: PaddingValues = PaddingValues(0.dp),
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
 
@@ -76,7 +76,10 @@ fun ProfileSetupScreen(
         modifier = Modifier.fillMaxSize().background(brush = backgroundGradient).padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Column(    modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F7FA))
+            .padding(paddingValues)) {
 
             // Indicador de progreso (4 pasos)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 32.dp)) {

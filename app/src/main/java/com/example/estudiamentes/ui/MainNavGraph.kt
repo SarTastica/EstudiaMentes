@@ -4,10 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.estudiamentes.ui.HomeScreen
-import com.example.estudiamentes.ui.setup.EditProfileScreen
-import com.example.estudiamentes.ui.setup.ProfileScreen
-import com.example.estudiamentes.ui.setup.ProfileSetupScreen
+import com.example.estudiamentes.ui.screens.EditProfileScreen
+import com.example.estudiamentes.ui.screens.ProfileScreen
 
 sealed class MainScreen(val route: String) {
     object Home : MainScreen("home")
@@ -36,7 +34,8 @@ fun MainNavGraph(welcomeMessage: String? = null, onLogout: () -> Unit) {
             ProfileScreen(
                 onEditProfile = {
                     navController.navigate(MainScreen.EditProfile.route)
-                }
+                },
+                onLogout = onLogout
             )
         }
         composable(MainScreen.EditProfile.route) {
