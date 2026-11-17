@@ -27,14 +27,31 @@ fun AuthNavGraph(
     val authViewModel: AuthViewModel = viewModel()
     val authState by authViewModel.authState.collectAsState()
 
+    //Esto es principalmete para mostrar o no mostrar las paginas de configuracion la primera vez que el usuario inicia sesion
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            val message = (authState as AuthState.Success).message
-            if (message == "Inicio de sesión exitoso") {
-                onAuthenticated(message)
+        val state = authState
+
+        if (state is AuthState.Success) {
+
+            if (state.perfilCompleto == false) {
+
+                // El usuario todavía no ha configurado su perfil
+                navController.navigate("profile_setup") {
+                    popUpTo(AuthScreen.Login.route) {
+                        inclusive = true
+                    }
+                }
+
+            } else if (state.perfilCompleto == true) {
+
+                // El usuario ya tiene su perfil configurado
+                onAuthenticated(state.message)
             }
+
+            authViewModel.consumeSuccess()
         }
     }
+
 
     NavHost(
         navController = navController,
@@ -51,8 +68,14 @@ fun AuthNavGraph(
         composable(AuthScreen.SignUp.route) {
             SignUpScreen(
                 authViewModel = authViewModel,
-                onNavigateToLogin = { navController.popBackStack() },
-                onNavigateToSetup = { navController.navigate("profile_setup") }
+                onNavigateToLogin = {
+                    authViewModel.resetState()
+                    navController.popBackStack()
+                },
+                onNavigateToSetup = {
+                    // La configuración se hará después de verificar
+                    // el correo e iniciar sesión.
+                }
             )
         }
 
@@ -78,5 +101,7 @@ fun AuthNavGraph(
                 onFinish = { onAuthenticated("Registro completado") }
             )
         }
+
+
     }
 }

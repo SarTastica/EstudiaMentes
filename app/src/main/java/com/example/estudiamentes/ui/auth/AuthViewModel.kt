@@ -16,15 +16,19 @@ class AuthViewModel : ViewModel() {
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
     private val authRepository = AuthRepository()
 
+
     fun login(email: String, password: String) {
         if (!validateEmailAndPassword(email, password)) return
 
         _authState.value = AuthState.Loading
 
-        authRepository.login(email, password) { success, error ->
+        authRepository.login(email, password) {
+                success, perfilCompleto, error ->
+
             if (success) {
                 _authState.value = AuthState.Success(
-                    "Inicio de sesión exitoso"
+                    message = "Inicio de sesión exitoso",
+                    perfilCompleto = perfilCompleto
                 )
             } else {
                 _authState.value = AuthState.Error(
@@ -33,6 +37,7 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
+
 
 
     fun signUp(email: String, password: String, confirmPassword: String) {
