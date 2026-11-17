@@ -20,7 +20,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.estudiamentes.data.ProfileRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileSetupScreen(
@@ -41,6 +43,12 @@ fun ProfileSetupScreen(
     var timeError by remember { mutableStateOf<String?>(null) }
 
     var mainGoal by remember { mutableStateOf("") }
+
+    val profileRepository = remember { ProfileRepository() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var isSaving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFE2F4FF), Color.White)
@@ -136,17 +144,71 @@ fun ProfileSetupScreen(
                     ) { Text("atrás", fontWeight = FontWeight.Bold, color = Color(0xFF64B5F6)) }
                 }
 
+
                 Button(
                     onClick = {
                         if (currentStep == 3) {
                             if (!validateTime()) return@Button
                         }
-                        if (currentStep < 4) currentStep++ else onFinish()
+
+                        if (currentStep < 4) {
+                            currentStep++
+                        } else {
+                            isSaving = true
+                            saveError = null
+
+                            val studyTime = "%02d:%02d".format(
+                                hourInput.toInt(),
+                                minuteInput.toInt()
+                            )
+
+                            coroutineScope.launch {
+                                profileRepository.saveProfile(
+                                    name = name,
+                                    username = username,
+                                    studyLevel = studyLevel,
+                                    center = center,
+                                    branch = branch,
+                                    selectedDays = selectedDays.toList(),
+                                    studyHoursPerDay = studyHoursPerDay,
+                                    studyTime = studyTime,
+                                    mainGoal = mainGoal
+                                ) { success, error ->
+
+                                    isSaving = false
+
+                                    if (success) {
+                                        onFinish()
+                                    } else {
+                                        saveError = error
+                                    }
+                                }
+                            }
+                        }
                     },
+                    enabled = !isSaving,
                     modifier = Modifier.height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF64B5F6))
-                ) { Text(if (currentStep == 4) "finalizar" else "siguiente", fontWeight = FontWeight.Bold, color = Color.White) }
+                ) {
+                    Text(
+                        if (isSaving) "Guardando..."
+                        else if (currentStep == 4) "finalizar"
+                        else "siguiente",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            if (saveError != null) {
+                Text(
+                    text = saveError ?: "",
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }
