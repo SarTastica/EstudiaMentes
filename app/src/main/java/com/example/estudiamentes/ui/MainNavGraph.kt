@@ -5,12 +5,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.estudiamentes.ui.HomeScreen
+import com.example.estudiamentes.ui.setup.EditProfileScreen
 import com.example.estudiamentes.ui.setup.ProfileScreen
 import com.example.estudiamentes.ui.setup.ProfileSetupScreen
 
 sealed class MainScreen(val route: String) {
     object Home : MainScreen("home")
     object Profile : MainScreen("profile")
+    object EditProfile : MainScreen("edit_profile")
 }
 
 @Composable
@@ -29,10 +31,22 @@ fun MainNavGraph(welcomeMessage: String? = null, onLogout: () -> Unit) {
             })
         }
 
+        // Pantalla de perfil
         composable(MainScreen.Profile.route) {
             ProfileScreen(
                 onEditProfile = {
-                    navController.navigate(MainScreen.Profile.route)
+                    navController.navigate(MainScreen.EditProfile.route)
+                }
+            )
+        }
+        composable(MainScreen.EditProfile.route) {
+            EditProfileScreen(
+                onCancel = {
+                    navController.popBackStack()
+                },
+                onSave = { username, photoUri, dailyGoal ->
+                    // Más adelante conectaremos aquí Firebase.
+                    navController.popBackStack()
                 }
             )
         }

@@ -31,12 +31,14 @@ private val Blue = Color(0xFF64B5F6)
 private val DarkBlue = Color(0xFF1E88E5)
 private val LightBlue = Color(0xFFE2F4FF)
 
+//TODO cuando tengamos el temporizador y se guarden los tiempos el una colección, hacer que la gráfica muestre los datos reales
 @Composable
 fun ProfileScreen(
-    onEditProfile: () -> Unit = {}
+    onEditProfile: () -> Unit = {},
 ) {
     var username by remember { mutableStateOf("Cargando...") }
     var photoUrl by remember { mutableStateOf<String?>(null) }
+
 
     // Recuperar los datos del usuario desde Firestore
     LaunchedEffect(Unit) {
