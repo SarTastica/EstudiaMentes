@@ -90,7 +90,6 @@ fun SalasScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F7FA))
-            .padding(paddingValues)
     ) {
         Row(
             modifier = Modifier

@@ -29,8 +29,13 @@ fun AuthNavGraph(
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
+
             val message = (authState as AuthState.Success).message
+
             if (message == "Inicio de sesión exitoso") {
+                // Consumimos el éxito antes de cambiar de navegación.
+                authViewModel.consumeSuccess()
+
                 onAuthenticated(message)
             }
         }

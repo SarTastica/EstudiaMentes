@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,10 +38,12 @@ fun SalasNavigation(paddingValues: PaddingValues) {
 
         composable(SalasRoutes.INICIO) {
             SalasScreen(
-                paddingValues = paddingValues,
+                paddingValues = PaddingValues(0.dp),
                 onBuscarSala = { navController.navigate(SalasRoutes.BUSCAR) },
                 onCrearSala = { navController.navigate(SalasRoutes.CREAR) },
-                onEntrarSala = { groupId -> navController.navigate("${SalasRoutes.SALA_ESTANDAR}/$groupId") }
+                onEntrarSala = { groupId ->
+                    navController.navigate("${SalasRoutes.SALA_ESTANDAR}/$groupId")
+                }
             )
         }
 
