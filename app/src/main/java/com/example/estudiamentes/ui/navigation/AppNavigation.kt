@@ -44,7 +44,7 @@ fun AppNavigation() {
                 SalasNavigation(paddingValues = paddingValues)
             }
 
-            composable("estudio") {
+            composable(BottomNavItem.Estudio.route) {
                 EstudioScreen(paddingValues = paddingValues)
             }
 

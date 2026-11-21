@@ -1,3 +1,4 @@
+
 package com.example.estudiamentes.ui.auth
 
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ sealed class AuthScreen(val route: String) {
     object SignUp : AuthScreen("signup")
     object ForgotPassword : AuthScreen("forgot_password")
     object ResetPassword : AuthScreen("reset_password")
+    object ProfileSetup : AuthScreen("profile_setup")
 }
 
 @Composable
@@ -23,16 +25,31 @@ fun AuthNavGraph(
     onAuthenticated: (String?) -> Unit,
     navController: NavHostController = rememberNavController()
 ) {
-
     val authViewModel: AuthViewModel = viewModel()
     val authState by authViewModel.authState.collectAsState()
 
+    // Decide si el usuario necesita configurar su perfil.
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            val message = (authState as AuthState.Success).message
-            if (message == "Inicio de sesión exitoso") {
-                onAuthenticated(message)
+        val state = authState
+
+        if (state is AuthState.Success) {
+
+            if (state.message == "Inicio de sesión exitoso") {
+
+                if (state.perfilCompleto == false) {
+                    navController.navigate(AuthScreen.ProfileSetup.route) {
+                        popUpTo(AuthScreen.Login.route) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                } else if (state.perfilCompleto == true) {
+                    onAuthenticated(state.message)
+                }
             }
+
+            // Evita que el mismo éxito vuelva a procesarse.
+            authViewModel.consumeSuccess()
         }
     }
 
@@ -40,26 +57,41 @@ fun AuthNavGraph(
         navController = navController,
         startDestination = AuthScreen.Login.route
     ) {
+
         composable(AuthScreen.Login.route) {
             LoginScreen(
                 authViewModel = authViewModel,
-                onNavigateToSignUp = { navController.navigate(AuthScreen.SignUp.route) },
-                onNavigateToForgotPassword = { navController.navigate(AuthScreen.ForgotPassword.route) }
+                onNavigateToSignUp = {
+                    navController.navigate(AuthScreen.SignUp.route)
+                },
+                onNavigateToForgotPassword = {
+                    navController.navigate(AuthScreen.ForgotPassword.route)
+                }
             )
         }
 
         composable(AuthScreen.SignUp.route) {
             SignUpScreen(
                 authViewModel = authViewModel,
-                onNavigateToLogin = { navController.popBackStack() },
-                onNavigateToSetup = { navController.navigate("profile_setup") }
+                onNavigateToLogin = {
+                    authViewModel.resetState()
+                    navController.popBackStack()
+                },
+                onNavigateToSetup = {
+                    // El perfil se configura después de verificar
+                    // el correo e iniciar sesión.
+                }
             )
         }
 
         composable(AuthScreen.ForgotPassword.route) {
             ForgotPasswordScreen(
-                onNavigateToLogin = { navController.popBackStack() },
-                onNavigateToResetPassword = { navController.navigate(AuthScreen.ResetPassword.route) }
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                },
+                onNavigateToResetPassword = {
+                    navController.navigate(AuthScreen.ResetPassword.route)
+                }
             )
         }
 
@@ -67,15 +99,19 @@ fun AuthNavGraph(
             ResetPasswordScreen(
                 onNavigateToLogin = {
                     navController.navigate(AuthScreen.Login.route) {
-                        popUpTo(AuthScreen.Login.route) { inclusive = true }
+                        popUpTo(AuthScreen.Login.route) {
+                            inclusive = true
+                        }
                     }
                 }
             )
         }
 
-        composable("profile_setup") {
+        composable(AuthScreen.ProfileSetup.route) {
             ProfileSetupScreen(
-                onFinish = { onAuthenticated("Registro completado") }
+                onFinish = {
+                    onAuthenticated("Registro completado")
+                }
             )
         }
     }

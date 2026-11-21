@@ -92,11 +92,7 @@ fun SignUpScreen(
 
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            authViewModel.signUp(email, password, confirmPassword)
-                            delay(1500)
-                            onNavigateToSetup()
-                        }
+                        authViewModel.signUp(email, password, confirmPassword)
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(18.dp),

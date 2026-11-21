@@ -1,9 +1,10 @@
+
 package com.example.estudiamentes.ui.auth
 
-import com.example.estudiamentes.data.AuthRepository
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.estudiamentes.data.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,7 @@ class AuthViewModel : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
     private val authRepository = AuthRepository()
 
     fun login(email: String, password: String) {
@@ -20,10 +22,11 @@ class AuthViewModel : ViewModel() {
 
         _authState.value = AuthState.Loading
 
-        authRepository.login(email, password) { success, error ->
+        authRepository.login(email, password) { success, perfilCompleto, error ->
             if (success) {
                 _authState.value = AuthState.Success(
-                    "Inicio de sesión exitoso"
+                    message = "Inicio de sesión exitoso",
+                    perfilCompleto = perfilCompleto
                 )
             } else {
                 _authState.value = AuthState.Error(
@@ -40,10 +43,10 @@ class AuthViewModel : ViewModel() {
             _authState.value = AuthState.Error("Las contraseñas no coinciden")
             return
         }
+
         _authState.value = AuthState.Loading
 
         authRepository.register(email, password) { success, error ->
-
             if (success) {
                 _authState.value = AuthState.Success(
                     "Te hemos enviado un correo. Verifica tu cuenta antes de iniciar sesión."
@@ -72,19 +75,27 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Idle
     }
 
-    private fun validateEmailAndPassword(email: String, password: String): Boolean {
+    private fun validateEmailAndPassword(
+        email: String,
+        password: String
+    ): Boolean {
         if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Por favor, rellena todos los campos")
             return false
         }
+
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _authState.value = AuthState.Error("El formato del correo no es válido")
             return false
         }
+
         if (password.length < 6) {
-            _authState.value = AuthState.Error("La contraseña debe tener al menos 6 caracteres")
+            _authState.value = AuthState.Error(
+                "La contraseña debe tener al menos 6 caracteres"
+            )
             return false
         }
+
         return true
     }
 

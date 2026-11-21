@@ -1,8 +1,14 @@
+
 package com.example.estudiamentes.ui.auth
 
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    data class Success(val message: String? = null) : AuthState()
+
+    data class Success(
+        val message: String? = null,
+        val perfilCompleto: Boolean? = null
+    ) : AuthState()
+
     data class Error(val message: String) : AuthState()
 }

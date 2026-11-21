@@ -175,7 +175,6 @@ fun SalaEstandarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(EstudioColors.background)
-                .padding(paddingValues)
                 .padding(horizontal = 18.dp, vertical = 12.dp)
         ) {
             Row(
