@@ -16,7 +16,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.estudiamentes.ui.estudio.EstudioScreen
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    onLogout: () -> Unit = {}
+) {
     val navController = rememberNavController()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
