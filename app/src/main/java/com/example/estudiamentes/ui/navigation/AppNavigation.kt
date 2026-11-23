@@ -19,7 +19,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.estudiamentes.ui.HomeScreen
 import com.example.estudiamentes.ui.screens.EditProfileScreen
+import com.example.estudiamentes.ui.screens.HomeScreen
 import com.example.estudiamentes.ui.screens.ProfileScreen
 
 @Composable
@@ -48,15 +50,25 @@ fun AppNavigation(onLogout: () -> Unit) {
             startDestination = BottomNavItem.Salas.route
         ) {
             composable(BottomNavItem.Inicio.route) {
-                PlaceholderScreen("Inicio", modifier = Modifier.padding(paddingValues))
+                HomeScreen(
+                    paddingValues = paddingValues,
+                    onContinue = {
+                        navController.navigate(BottomNavItem.Mensajes.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
             }
 
             composable(BottomNavItem.Salas.route) {
-                // Aquí inyectamos tu pantalla independiente de Salas
                 SalasNavigation(paddingValues = paddingValues)
             }
 
-            composable(BottomNavItem.Mensajes.route) {
+            composable(BottomNavItem.Mensajes.route) { //TODO cambiar por el temporizador
                 PlaceholderScreen("Mensajes", modifier = Modifier.padding(paddingValues))
             }
 
