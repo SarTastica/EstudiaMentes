@@ -49,7 +49,8 @@ class AuthViewModel : ViewModel() {
         authRepository.register(email, password) { success, error ->
             if (success) {
                 _authState.value = AuthState.Success(
-                    "Te hemos enviado un correo. Verifica tu cuenta antes de iniciar sesión."
+                    message = "Cuenta creada correctamente",
+                    perfilCompleto = false
                 )
             } else {
                 _authState.value = AuthState.Error(

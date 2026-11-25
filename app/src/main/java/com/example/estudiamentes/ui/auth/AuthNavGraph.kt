@@ -1,4 +1,3 @@
-
 package com.example.estudiamentes.ui.auth
 
 import androidx.compose.runtime.Composable
@@ -23,32 +22,26 @@ sealed class AuthScreen(val route: String) {
 @Composable
 fun AuthNavGraph(
     onAuthenticated: (String?) -> Unit,
+    onStartRegister: () -> Unit = {},
     navController: NavHostController = rememberNavController()
 ) {
     val authViewModel: AuthViewModel = viewModel()
     val authState by authViewModel.authState.collectAsState()
 
-    // Decide si el usuario necesita configurar su perfil.
     LaunchedEffect(authState) {
         val state = authState
 
         if (state is AuthState.Success) {
-
             if (state.message == "Inicio de sesión exitoso") {
-
-                if (state.perfilCompleto == false) {
-                    navController.navigate(AuthScreen.ProfileSetup.route) {
-                        popUpTo(AuthScreen.Login.route) {
-                            inclusive = true
-                        }
-                        launchSingleTop = true
+                onAuthenticated(state.message)
+            } else if (state.message == "Cuenta creada correctamente") {
+                navController.navigate(AuthScreen.ProfileSetup.route) {
+                    popUpTo(AuthScreen.Login.route) {
+                        inclusive = true
                     }
-                } else if (state.perfilCompleto == true) {
-                    onAuthenticated(state.message)
+                    launchSingleTop = true
                 }
             }
-
-            // Evita que el mismo éxito vuelva a procesarse.
             authViewModel.consumeSuccess()
         }
     }
@@ -57,11 +50,11 @@ fun AuthNavGraph(
         navController = navController,
         startDestination = AuthScreen.Login.route
     ) {
-
         composable(AuthScreen.Login.route) {
             LoginScreen(
                 authViewModel = authViewModel,
                 onNavigateToSignUp = {
+                    onStartRegister()
                     navController.navigate(AuthScreen.SignUp.route)
                 },
                 onNavigateToForgotPassword = {
@@ -78,8 +71,7 @@ fun AuthNavGraph(
                     navController.popBackStack()
                 },
                 onNavigateToSetup = {
-                    // El perfil se configura después de verificar
-                    // el correo e iniciar sesión.
+                    navController.navigate(AuthScreen.ProfileSetup.route)
                 }
             )
         }

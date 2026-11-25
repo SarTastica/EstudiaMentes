@@ -25,24 +25,19 @@ import com.example.estudiamentes.ui.screens.ProfileScreen
 @Composable
 fun AppNavigation(onLogout: () -> Unit) {
     val navController = rememberNavController()
-
-    // Obtenemos la ruta actual para saber qué botón del footer pintar de azul
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: BottomNavItem.Salas.route
 
-    // El footer global se pinta una sola vez aquí
     MainScaffold(
         currentRoute = currentRoute,
         onNavigate = { route ->
             navController.navigate(route) {
-                // Configuración estándar para no acumular pantallas al navegar por el footer
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
         }
     ) { paddingValues ->
-        // Este NavHost es el "hueco" donde se cargan las páginas
         NavHost(
             navController = navController,
             startDestination = BottomNavItem.Salas.route
@@ -52,7 +47,6 @@ fun AppNavigation(onLogout: () -> Unit) {
             }
 
             composable(BottomNavItem.Salas.route) {
-                // Aquí inyectamos tu pantalla independiente de Salas
                 SalasNavigation(paddingValues = paddingValues)
             }
 
