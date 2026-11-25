@@ -1,4 +1,5 @@
 package com.example.estudiamentes.ui.setup
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,7 +27,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileSetupScreen(
-    onFinish: () -> Unit = {},paddingValues: PaddingValues = PaddingValues(0.dp),
+    onFinish: () -> Unit = {},
+    paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
 
@@ -73,22 +75,34 @@ fun ProfileSetupScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(brush = backgroundGradient).padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brush = backgroundGradient)
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(    modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F7FA))
-            .padding(paddingValues)) {
-
-            // Indicador de progreso (4 pasos)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 32.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 for (i in 1..4) {
                     Box(
-                        modifier = Modifier.size(24.dp).background(
-                            color = if (i == currentStep) Color(0xFF64B5F6) else Color.Transparent,
-                            shape = CircleShape
-                        ).border(1.dp, Color(0xFF64B5F6), CircleShape)
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                color = if (i == currentStep) Color(0xFF64B5F6) else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .border(1.dp, Color(0xFF64B5F6), CircleShape)
                     )
                 }
             }
@@ -110,11 +124,19 @@ fun ProfileSetupScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     when (currentStep) {
-                        1 -> StepOne(name, { name = it }, username, { username = it })
+                        1 -> StepOne(
+                            name = name,
+                            onNameChange = { if (it.length <= 30) name = it },
+                            username = username,
+                            onUsernameChange = { if (it.length <= 20) username = it }
+                        )
                         2 -> StepTwo(
-                            studyLevel = studyLevel, onStudyLevelChange = { studyLevel = it },
-                            center = center, onCenterChange = { center = it },
-                            branch = branch, onBranchChange = { branch = it }
+                            studyLevel = studyLevel,
+                            onStudyLevelChange = { studyLevel = it },
+                            center = center,
+                            onCenterChange = { center = it },
+                            branch = branch,
+                            onBranchChange = { branch = it }
                         )
                         3 -> StepThree(
                             selectedDays = selectedDays,
@@ -144,9 +166,15 @@ fun ProfileSetupScreen(
                         modifier = Modifier.height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF64B5F6))
-                    ) { Text("atrás", fontWeight = FontWeight.Bold, color = Color(0xFF64B5F6)) }
+                    ) {
+                        Text(
+                            text = "atrás",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF64B5F6),
+                            lineHeight = 20.sp
+                        )
+                    }
                 }
-
 
                 Button(
                     onClick = {
@@ -160,31 +188,24 @@ fun ProfileSetupScreen(
                             isSaving = true
                             saveError = null
 
-                            val studyTime = "%02d:%02d".format(
-                                hourInput.toInt(),
-                                minuteInput.toInt()
-                            )
+                            val h = hourInput.toIntOrNull() ?: 0
+                            val m = minuteInput.toIntOrNull() ?: 0
+                            val studyTime = "%02d:%02d".format(h, m)
 
                             coroutineScope.launch {
                                 profileRepository.saveProfile(
-                                    name = name,
-                                    username = username,
+                                    name = name.trim(),
+                                    username = username.trim(),
                                     studyLevel = studyLevel,
-                                    center = center,
-                                    branch = branch,
+                                    center = center.trim(),
+                                    branch = branch.trim(),
                                     selectedDays = selectedDays.toList(),
                                     studyHoursPerDay = studyHoursPerDay,
                                     studyTime = studyTime,
                                     mainGoal = mainGoal
-                                ) { success, error ->
-
+                                ) { _, _ ->
                                     isSaving = false
-
-                                    if (success) {
-                                        onFinish()
-                                    } else {
-                                        saveError = error
-                                    }
+                                    onFinish()
                                 }
                             }
                         }
@@ -195,11 +216,12 @@ fun ProfileSetupScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF64B5F6))
                 ) {
                     Text(
-                        if (isSaving) "Guardando..."
+                        text = if (isSaving) "Guardando..."
                         else if (currentStep == 4) "finalizar"
                         else "siguiente",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        lineHeight = 20.sp
                     )
                 }
             }
@@ -210,7 +232,9 @@ fun ProfileSetupScreen(
                     color = Color.Red,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 )
             }
         }
@@ -218,18 +242,41 @@ fun ProfileSetupScreen(
 }
 
 @Composable
-fun StepOne(name: String, onNameChange: (String) -> Unit, username: String, onUsernameChange: (String) -> Unit) {
-    FormTextField(label = "¿Cómo te llamas?", value = name, onValueChange = onNameChange)
-    Spacer(modifier = Modifier.height(32.dp))
-    FormTextField(label = "Nombre de usuario", subtitle = "Así podrán encontrarte", value = username, onValueChange = onUsernameChange)
+fun StepOne(
+    name: String,
+    onNameChange: (String) -> Unit,
+    username: String,
+    onUsernameChange: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        FormTextField(
+            label = "¿Cómo te llamas?",
+            subtitle = "${name.length}/30 caracteres",
+            value = name,
+            onValueChange = onNameChange
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        FormTextField(
+            label = "Nombre de usuario",
+            subtitle = "Así podrán encontrarte (${username.length}/20)",
+            value = username,
+            onValueChange = onUsernameChange
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StepTwo(
-    studyLevel: String, onStudyLevelChange: (String) -> Unit,
-    center: String, onCenterChange: (String) -> Unit,
-    branch: String, onBranchChange: (String) -> Unit
+    studyLevel: String,
+    onStudyLevelChange: (String) -> Unit,
+    center: String,
+    onCenterChange: (String) -> Unit,
+    branch: String,
+    onBranchChange: (String) -> Unit
 ) {
     var expandedLevel by remember { mutableStateOf(false) }
     val levels = listOf("Primaria", "ESO", "Bachillerato", "Universidad", "Ciclo Formativo", "Trabajo propio")
@@ -237,9 +284,19 @@ fun StepTwo(
     var searchResults by remember { mutableStateOf(listOf<String>()) }
     var isCenterExpanded by remember { mutableStateOf(false) }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-
-        Text(text = "Nivel de estudios", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Nivel de estudios",
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         ExposedDropdownMenuBox(
@@ -254,10 +311,14 @@ fun StepTwo(
                 placeholder = { Text("Selecciona tu nivel", color = Color(0xFF90CAF9)) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLevel) },
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFF90CAF9), focusedBorderColor = Color(0xFF42A5F5),
-                    unfocusedContainerColor = Color.White, focusedContainerColor = Color.White
+                    unfocusedBorderColor = Color(0xFF90CAF9),
+                    focusedBorderColor = Color(0xFF42A5F5),
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
                 )
             )
 
@@ -280,8 +341,25 @@ fun StepTwo(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(text = "¿Cuál es tu centro?", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
-        Text(text = "Escribe para buscar en la nube", color = Color(0xFF90CAF9), fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            text = "¿Cuál es tu centro?",
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = "Escribe para buscar en la nube",
+            color = Color(0xFF90CAF9),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
 
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
@@ -298,15 +376,19 @@ fun StepTwo(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFF90CAF9), focusedBorderColor = Color(0xFF42A5F5),
-                    unfocusedContainerColor = Color.White, focusedContainerColor = Color.White
+                    unfocusedBorderColor = Color(0xFF90CAF9),
+                    focusedBorderColor = Color(0xFF42A5F5),
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
                 )
             )
 
             DropdownMenu(
                 expanded = isCenterExpanded,
                 onDismissRequest = { isCenterExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.85f).background(Color.White),
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .background(Color.White),
                 properties = androidx.compose.ui.window.PopupProperties(focusable = false)
             ) {
                 searchResults.forEach { suggestion ->
@@ -322,52 +404,120 @@ fun StepTwo(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        FormTextField(label = "¿Cuál es tu rama?", subtitle = "Ej. Ingeniería, Ciencias...", value = branch, onValueChange = onBranchChange)
+        FormTextField(
+            label = "¿Cuál es tu rama?",
+            subtitle = "Ej. Ingeniería, Ciencias...",
+            value = branch,
+            onValueChange = onBranchChange
+        )
     }
 }
 
 @Composable
 fun StepThree(
-    selectedDays: Set<String>, onDayToggle: (String) -> Unit,
-    hours: Float, onHoursChange: (Float) -> Unit,
-    hourInput: String, onHourChange: (String) -> Unit,
-    minuteInput: String, onMinuteChange: (String) -> Unit,
+    selectedDays: Set<String>,
+    onDayToggle: (String) -> Unit,
+    hours: Float,
+    onHoursChange: (Float) -> Unit,
+    hourInput: String,
+    onHourChange: (String) -> Unit,
+    minuteInput: String,
+    onMinuteChange: (String) -> Unit,
     timeError: String?
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-
-        Text("¿Qué días estudias?", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "¿Qué días estudias?",
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         val daysOfWeek = listOf("L", "M", "X", "J", "V", "S", "D")
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
             daysOfWeek.forEach { day ->
                 val isSelected = selectedDays.contains(day)
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(color = if (isSelected) Color(0xFF42A5F5) else Color(0xFFE3F2FD), shape = CircleShape)
+                        .background(
+                            color = if (isSelected) Color(0xFF42A5F5) else Color(0xFFE3F2FD),
+                            shape = CircleShape
+                        )
                         .clickable { onDayToggle(day) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = day, color = if (isSelected) Color.White else Color(0xFF1E88E5), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        text = day,
+                        color = if (isSelected) Color.White else Color(0xFF1E88E5),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text("Horas por día", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text("${hours.toInt()} horas", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E88E5))
+        Text(
+            text = "Horas por día",
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = "${hours.toInt()} horas",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1E88E5),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         Slider(
-            value = hours, onValueChange = onHoursChange, valueRange = 1f..24f, steps = 22,
-            colors = SliderDefaults.colors(thumbColor = Color(0xFF42A5F5), activeTrackColor = Color(0xFF90CAF9))
+            value = hours,
+            onValueChange = onHoursChange,
+            valueRange = 1f..24f,
+            steps = 22,
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFF42A5F5),
+                activeTrackColor = Color(0xFF90CAF9)
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("¿A qué hora estudias?", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
-        Text("Introduce formato 24h (00:00 a 23:59)", color = Color(0xFF90CAF9), fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
+        Text(
+            text = "¿A qué hora estudias?",
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = "Introduce formato 24h (00:00 a 23:59)",
+            color = Color(0xFF90CAF9),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -377,16 +527,29 @@ fun StepThree(
             OutlinedTextField(
                 value = hourInput,
                 onValueChange = onHourChange,
-                placeholder = { Text("HH", color = Color(0xFF90CAF9)) },
+                placeholder = {
+                    Text(
+                        text = "HH",
+                        color = Color(0xFF90CAF9),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
                 singleLine = true,
                 maxLines = 1,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.width(75.dp).height(60.dp),
-                textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                modifier = Modifier.width(80.dp),
+                textStyle = LocalTextStyle.current.copy(
+                    textAlign = TextAlign.Center,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White, focusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color(0xFF90CAF9), focusedBorderColor = Color(0xFF42A5F5)
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White,
+                    unfocusedBorderColor = Color(0xFF90CAF9),
+                    focusedBorderColor = Color(0xFF42A5F5)
                 )
             )
 
@@ -401,47 +564,92 @@ fun StepThree(
             OutlinedTextField(
                 value = minuteInput,
                 onValueChange = onMinuteChange,
-                placeholder = { Text("MM", color = Color(0xFF90CAF9)) },
+                placeholder = {
+                    Text(
+                        text = "MM",
+                        color = Color(0xFF90CAF9),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
                 singleLine = true,
                 maxLines = 1,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.width(75.dp).height(60.dp),
-                textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                modifier = Modifier.width(80.dp),
+                textStyle = LocalTextStyle.current.copy(
+                    textAlign = TextAlign.Center,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White, focusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color(0xFF90CAF9), focusedBorderColor = Color(0xFF42A5F5)
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White,
+                    unfocusedBorderColor = Color(0xFF90CAF9),
+                    focusedBorderColor = Color(0xFF42A5F5)
                 )
             )
         }
 
         if (timeError != null) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = timeError, color = Color.Red, fontSize = 13.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+            Text(
+                text = timeError,
+                color = Color.Red,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
 @Composable
 fun StepFour(selectedGoal: String, onGoalChange: (String) -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Text("¿Cuál es tu objetivo principal?", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "¿Cuál es tu objetivo principal?",
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(24.dp))
 
-        val goals = listOf("Aprobar el curso", "Crear un hábito diario", "Preparar Oposiciones", "Productividad personal")
+        val goals = listOf(
+            "Aprobar el curso",
+            "Crear un hábito diario",
+            "Preparar Oposiciones",
+            "Productividad personal"
+        )
 
         goals.forEach { goal ->
             val isSelected = selectedGoal == goal
             Button(
                 onClick = { onGoalChange(goal) },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isSelected) Color(0xFF42A5F5) else Color(0xFFE3F2FD),
                     contentColor = if (isSelected) Color.White else Color(0xFF1E88E5)
                 )
             ) {
-                Text(goal, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, fontSize = 16.sp)
+                Text(
+                    text = goal,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
@@ -456,10 +664,30 @@ fun FormTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     trailingIcon: Boolean = false
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         if (subtitle != null) {
-            Text(text = subtitle, color = Color(0xFF90CAF9), fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                text = subtitle,
+                color = Color(0xFF90CAF9),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
         } else {
             Spacer(modifier = Modifier.height(8.dp))
         }

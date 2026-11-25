@@ -1,4 +1,3 @@
-
 package com.example.estudiamentes
 
 import android.os.Bundle
@@ -24,56 +23,30 @@ class MainActivity : ComponentActivity() {
         setContent {
             EstudiaMentesTheme {
 
-                val auth = remember {
-                    FirebaseAuth.getInstance()
-                }
-
-                var isAuthenticated by remember {
-                    mutableStateOf(false)
-                }
-
-                var isCheckingSession by remember {
-                    mutableStateOf(true)
-                }
-
-                var welcomeMessage by remember {
-                    mutableStateOf<String?>(null)
-                }
+                val auth = remember { FirebaseAuth.getInstance() }
+                var isAuthenticated by remember { mutableStateOf(false) }
+                var isCheckingSession by remember { mutableStateOf(true) }
+                var isRegistering by remember { mutableStateOf(false) }
+                var welcomeMessage by remember { mutableStateOf<String?>(null) }
 
                 DisposableEffect(auth) {
-
                     val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-
                         val user = firebaseAuth.currentUser
 
                         if (user == null) {
                             isAuthenticated = false
                             isCheckingSession = false
-                        } else {
-                            // Comprobamos que la cuenta sigue siendo válida.
+                        } else if (!isRegistering) {
                             user.reload().addOnCompleteListener { task ->
-
                                 val updatedUser = firebaseAuth.currentUser
 
-                                if (
-                                    task.isSuccessful &&
-                                    updatedUser != null &&
-                                    updatedUser.isEmailVerified
-                                ) {
+                                if (task.isSuccessful && updatedUser != null) {
                                     isAuthenticated = true
-
-                                } else if (
-                                    task.exception is FirebaseAuthInvalidUserException ||
-                                    (task.isSuccessful && updatedUser?.isEmailVerified != true)
-                                ) {
+                                } else if (task.exception is FirebaseAuthInvalidUserException) {
                                     firebaseAuth.signOut()
                                     isAuthenticated = false
-
                                 } else {
-                                    // Si falla la conexión, mantenemos la sesión
-                                    // previamente verificada.
-                                    isAuthenticated =
-                                        updatedUser?.isEmailVerified == true
+                                    isAuthenticated = updatedUser != null
                                 }
 
                                 isCheckingSession = false
@@ -82,34 +55,33 @@ class MainActivity : ComponentActivity() {
                     }
 
                     auth.addAuthStateListener(listener)
-
                     onDispose {
                         auth.removeAuthStateListener(listener)
                     }
                 }
 
                 if (isCheckingSession) {
-
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
                     }
-
                 } else if (isAuthenticated) {
-
                     AppNavigation(
                         onLogout = {
+                            isRegistering = false
                             auth.signOut()
                         }
                     )
-
                 } else {
-
                     AuthNavGraph(
+                        onStartRegister = {
+                            isRegistering = true
+                        },
                         onAuthenticated = { message ->
                             welcomeMessage = message
+                            isRegistering = false
                             isAuthenticated = true
                         }
                     )
