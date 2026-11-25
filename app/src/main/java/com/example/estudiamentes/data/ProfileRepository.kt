@@ -67,27 +67,45 @@ class ProfileRepository {
         context: Context,
         onLoaded: (manzanas: Int, racha: Int, desbloqueados: List<String>, equipados: List<String>) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: "guest"
-        val prefs = context.getSharedPreferences("estudiamentes_huerto_$uid", Context.MODE_PRIVATE)
+        val uid = auth.currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            onLoaded(0, 0, emptyList(), emptyList())
+            return
+        }
 
+        val prefs = context.getSharedPreferences("estudiamentes_huerto_$uid", Context.MODE_PRIVATE)
         val localManzanas = prefs.getInt("manzanas", 15)
         val localRacha = prefs.getInt("rachaDias", 0)
         val localDesbloqueados = prefs.getStringSet("desbloqueados", emptySet())?.toList() ?: emptyList()
         val localEquipados = prefs.getStringSet("equipados", emptySet())?.toList() ?: emptyList()
 
-        if (uid == "guest") {
-            onLoaded(localManzanas, localRacha, localDesbloqueados, localEquipados)
-            return
-        }
-
         firestore.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
-                val manzanas = doc.getLong("manzanas")?.toInt() ?: localManzanas
-                val racha = doc.getLong("rachaDias")?.toInt() ?: localRacha
+                if (!doc.exists()) {
+                    val inicial = hashMapOf(
+                        "manzanas" to 15,
+                        "rachaDias" to 0,
+                        "ultimaFechaEstudio" to "",
+                        "itemsDesbloqueados" to emptyList<String>(),
+                        "itemsEquipados" to emptyList<String>()
+                    )
+                    firestore.collection("users").document(uid).set(inicial, SetOptions.merge())
+                    prefs.edit()
+                        .putInt("manzanas", 15)
+                        .putInt("rachaDias", 0)
+                        .putStringSet("desbloqueados", emptySet())
+                        .putStringSet("equipados", emptySet())
+                        .apply()
+                    onLoaded(15, 0, emptyList(), emptyList())
+                    return@addOnSuccessListener
+                }
+
+                val manzanas = doc.getLong("manzanas")?.toInt() ?: 15
+                val racha = doc.getLong("rachaDias")?.toInt() ?: 0
                 val desbloqueados = (doc.get("itemsDesbloqueados") as? List<*>)
-                    ?.filterIsInstance<String>() ?: localDesbloqueados
+                    ?.filterIsInstance<String>() ?: emptyList()
                 val equipados = (doc.get("itemsEquipados") as? List<*>)
-                    ?.filterIsInstance<String>() ?: localEquipados
+                    ?.filterIsInstance<String>() ?: emptyList()
 
                 prefs.edit()
                     .putInt("manzanas", manzanas)
@@ -108,9 +126,10 @@ class ProfileRepository {
         minutosEstudiados: Int,
         onUpdated: (nuevasManzanas: Int, nuevaRacha: Int, ganadas: Int) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: "guest"
-        val prefs = context.getSharedPreferences("estudiamentes_huerto_$uid", Context.MODE_PRIVATE)
+        val uid = auth.currentUser?.uid
+        if (uid.isNullOrBlank()) return
 
+        val prefs = context.getSharedPreferences("estudiamentes_huerto_$uid", Context.MODE_PRIVATE)
         val hoy = LocalDate.now().toString()
         val ultimaFecha = prefs.getString("ultimaFechaEstudio", "") ?: ""
         var rachaActual = prefs.getInt("rachaDias", 0)
@@ -137,14 +156,12 @@ class ProfileRepository {
             .putString("ultimaFechaEstudio", hoy)
             .apply()
 
-        if (uid != "guest") {
-            val data = hashMapOf(
-                "manzanas" to totalManzanas,
-                "rachaDias" to rachaActual,
-                "ultimaFechaEstudio" to hoy
-            )
-            firestore.collection("users").document(uid).set(data, SetOptions.merge())
-        }
+        val data = hashMapOf(
+            "manzanas" to totalManzanas,
+            "rachaDias" to rachaActual,
+            "ultimaFechaEstudio" to hoy
+        )
+        firestore.collection("users").document(uid).set(data, SetOptions.merge())
 
         onUpdated(totalManzanas, rachaActual, ganadas)
     }
@@ -155,22 +172,21 @@ class ProfileRepository {
         desbloqueados: List<String>,
         equipados: List<String>
     ) {
-        val uid = auth.currentUser?.uid ?: "guest"
-        val prefs = context.getSharedPreferences("estudiamentes_huerto_$uid", Context.MODE_PRIVATE)
+        val uid = auth.currentUser?.uid
+        if (uid.isNullOrBlank()) return
 
+        val prefs = context.getSharedPreferences("estudiamentes_huerto_$uid", Context.MODE_PRIVATE)
         prefs.edit()
             .putInt("manzanas", manzanas)
             .putStringSet("desbloqueados", desbloqueados.toSet())
             .putStringSet("equipados", equipados.toSet())
             .apply()
 
-        if (uid != "guest") {
-            val data = hashMapOf(
-                "manzanas" to manzanas,
-                "itemsDesbloqueados" to desbloqueados,
-                "itemsEquipados" to equipados
-            )
-            firestore.collection("users").document(uid).set(data, SetOptions.merge())
-        }
+        val data = hashMapOf(
+            "manzanas" to manzanas,
+            "itemsDesbloqueados" to desbloqueados,
+            "itemsEquipados" to equipados
+        )
+        firestore.collection("users").document(uid).set(data, SetOptions.merge())
     }
 }

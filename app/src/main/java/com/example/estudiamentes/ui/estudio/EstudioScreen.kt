@@ -55,18 +55,26 @@ fun EstudioScreen(
         context.getSharedPreferences("estudiamentes_pomodoro_presets", Context.MODE_PRIVATE)
     }
 
-    var manzanas by remember { mutableIntStateOf(15) }
+    var manzanas by remember { mutableIntStateOf(0) }
     var rachaDias by remember { mutableIntStateOf(0) }
     var itemsDesbloqueados by remember { mutableStateOf(listOf<String>()) }
     var itemsEquipados by remember { mutableStateOf(listOf<String>()) }
     var mostrarTienda by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        profileRepository.cargarEstadoHuerto(context) { m, r, desb, equip ->
-            manzanas = m
-            rachaDias = r
-            itemsDesbloqueados = desb
-            itemsEquipados = equip
+    LaunchedEffect(currentUserId) {
+        manzanas = 0
+        rachaDias = 0
+        itemsDesbloqueados = emptyList()
+        itemsEquipados = emptyList()
+        mostrarTienda = false
+
+        if (currentUserId.isNotBlank()) {
+            profileRepository.cargarEstadoHuerto(context) { m, r, desb, equip ->
+                manzanas = m
+                rachaDias = r
+                itemsDesbloqueados = desb
+                itemsEquipados = equip
+            }
         }
     }
 
