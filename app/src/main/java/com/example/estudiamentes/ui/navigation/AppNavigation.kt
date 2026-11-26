@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.estudiamentes.ui.archivos.ArchivosScreen
 import com.example.estudiamentes.ui.estudio.EstudioScreen
 import com.example.estudiamentes.ui.screens.EditProfileScreen
 import com.example.estudiamentes.ui.screens.ProfileScreen
@@ -53,7 +54,7 @@ fun AppNavigation(
             }
 
             composable(BottomNavItem.Archivos.route) {
-                PlaceholderScreen("Archivos", modifier = Modifier.padding(paddingValues))
+                ArchivosScreen(paddingValues = paddingValues)
             }
 
             composable(BottomNavItem.Perfil.route) {
