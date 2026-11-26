@@ -14,6 +14,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.estudiamentes.ui.estudio.EstudioScreen
+import com.example.estudiamentes.ui.screens.EditProfileScreen
+import com.example.estudiamentes.ui.screens.ProfileScreen
 
 @Composable
 fun AppNavigation(
@@ -55,7 +57,24 @@ fun AppNavigation(
             }
 
             composable(BottomNavItem.Perfil.route) {
-                PlaceholderScreen("Perfil", modifier = Modifier.padding(paddingValues))
+                ProfileScreen(
+                    paddingValues = paddingValues,
+                    onEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = onLogout
+                )
+            }
+
+            composable("edit_profile") {
+                EditProfileScreen(
+                    onCancel = {
+                        navController.popBackStack()
+                    },
+                    onSave = { _, _, _ ->
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }
